@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+### 0.2.0 - 2026-07-28
 - Documented the `ori`/`mod` diff structure stored in `Modification::$modifications`.
 - Made the `ori`/`mod` diff keys configurable via `config('approvals.diff_keys.*')`.
 

@@ -110,15 +110,17 @@ trait RequiresApprovalWhenChanges
         if ($approved && $this->updateWhenApproved) {
             $this->setForcedApprovalUpdate(true);
 
+            $modifiedKey = self::modifiedDiffKey();
+
             foreach ($modification->modifications as $key => $mod) {
                 $current = $this->{$key};
 
                 if (is_object($current) && method_exists($current, 'set')) {
-                    foreach ($mod['mod'] as $k => $v) {
+                    foreach ($mod[$modifiedKey] as $k => $v) {
                         $current->set($k, $v);
                     }
                 } else {
-                    $this->{$key} = $mod['mod'];
+                    $this->{$key} = $mod[$modifiedKey];
                 }
             }
 
@@ -282,17 +284,20 @@ trait RequiresApprovalWhenChanges
 
         $reject = $item->noTrackModification ?? [];
 
+        $originalKey = self::originalDiffKey();
+        $modifiedKey = self::modifiedDiffKey();
+
         $diffFn = fn ($modified, $original) => array_diff_multidimensional($modified, $original);
 
-        $buildRow = function ($key) use ($item, $getReal, $diffFn) {
+        $buildRow = function ($key) use ($item, $getReal, $diffFn, $originalKey, $modifiedKey) {
             $original = $item->getOriginal($key);
 
             if (is_array($original)) {
                 $d = $diffFn($getReal($key, $item->{$key}), $original);
 
                 return [
-                    'ori' => collect($original)->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
-                    'mod' => collect($getReal($key, $item->{$key}))->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
+                    $originalKey => collect($original)->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
+                    $modifiedKey => collect($getReal($key, $item->{$key}))->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
                 ];
             }
 
@@ -300,14 +305,14 @@ trait RequiresApprovalWhenChanges
                 $d = $diffFn($getReal($key, $item->{$key})->toArray(), $original->toArray());
 
                 return [
-                    'ori' => $original->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
-                    'mod' => $getReal($key, $item->{$key})->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
+                    $originalKey => $original->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
+                    $modifiedKey => $getReal($key, $item->{$key})->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
                 ];
             }
 
             return [
-                'ori' => $item->getRawOriginal($key),
-                'mod' => $item->{$key} instanceof \DateTime ? $item->{$key}->format('Y-m-d') : $item->{$key},
+                $originalKey => $item->getRawOriginal($key),
+                $modifiedKey => $item->{$key} instanceof \DateTime ? $item->{$key}->format('Y-m-d') : $item->{$key},
             ];
         };
 
@@ -375,5 +380,23 @@ trait RequiresApprovalWhenChanges
         if ($item->modificationMeta) {
             $modification->meta = $item->modificationMeta;
         }
+    }
+
+    /**
+     * Key used to store the original value in each diff row.
+     * Configurable via `approvals.diff_keys.original` (defaults to 'ori').
+     */
+    private static function originalDiffKey(): string
+    {
+        return config('approvals.diff_keys.original', 'ori');
+    }
+
+    /**
+     * Key used to store the modified value in each diff row.
+     * Configurable via `approvals.diff_keys.modified` (defaults to 'mod').
+     */
+    private static function modifiedDiffKey(): string
+    {
+        return config('approvals.diff_keys.modified', 'mod');
     }
 }

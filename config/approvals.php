@@ -18,4 +18,19 @@ return [
         'approval' => \ReynoTECH\Approvals\Models\Approval::class,
         'disapproval' => \ReynoTECH\Approvals\Models\Disapproval::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Diff keys
+    |--------------------------------------------------------------------------
+    |
+    | Each entry in `modifications.modifications` is stored as a pair of
+    | original/modified values, e.g. ['ori' => 'draft', 'mod' => 'active'].
+    | Rename the keys here if 'ori'/'mod' collide with something in your app.
+    |
+    */
+    'diff_keys' => [
+        'original' => 'ori',
+        'modified' => 'mod',
+    ],
 ];

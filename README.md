@@ -63,10 +63,35 @@ $user->approve($modification, 'confirmed with client');
 // once approvers_required is reached, the diff is applied and the row is updated
 ```
 
+### The modification diff
+
+`Modification::$modifications` stores one entry per changed attribute, each as a pair of the original and modified value:
+
+```php
+[
+    'status' => ['ori' => 'draft', 'mod' => 'active'],
+]
+```
+
+- `ori` — the attribute's value before the change (from `getOriginal()`/`getRawOriginal()`).
+- `mod` — the attribute's value after the change, i.e. what gets written back once approved.
+
+For array-like/schemaless attributes, `ori`/`mod` only contain the sub-keys that actually changed rather than the whole structure.
+
+The `ori`/`mod` key names can be renamed via config, in case they collide with something in your app:
+```php
+// config/approvals.php
+'diff_keys' => [
+    'original' => 'ori',
+    'modified' => 'mod',
+],
+```
+
 ### Extension points
 - `modifier()` — override to change how the "who made this change" resolver works (defaults to `auth()->user()`).
 - `authorizedToApprove()` / `authorizedToDisapprove()` — override on the approver model to add role/policy checks.
 - `config('approvals.models.*')` — swap in your own `Modification`/`Approval`/`Disapproval` subclasses.
+- `config('approvals.diff_keys.*')` — rename the `ori`/`mod` keys used in the stored diff (see above).
 - `Concerns\HasModificationMedia` — optional trait to attach images to a pending `Modification` via `spatie/laravel-medialibrary` (not a hard dependency of this package).
 - Diff application (`applyModificationChanges`) writes back to any attribute whose current value is an object exposing a `set($key, $value)` method (e.g. `spatie/laravel-schemaless-attributes`) instead of overwriting it outright.
 

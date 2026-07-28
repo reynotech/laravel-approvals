@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ReynoTECH\Approvals\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
+
+class Approval extends Model
+{
+    protected $table = 'approvals';
+
+    protected $guarded = ['id'];
+
+    public function approver(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function modification(): BelongsTo
+    {
+        return $this->belongsTo(ResolvesApprovalModels::modificationClass());
+    }
+}

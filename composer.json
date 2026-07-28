@@ -1,0 +1,52 @@
+{
+    "name": "reynotech/laravel-approvals",
+    "description": "Approval workflows for Eloquent models: capture pending changes, gate them behind N approvers/disapprovers, and apply the diff once approved.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "eloquent", "approval", "workflow", "moderation"],
+    "require": {
+        "php": "^8.2",
+        "illuminate/database": "^11.0 || ^12.0",
+        "illuminate/support": "^11.0 || ^12.0",
+        "rogervila/array-diff-multidimensional": "^2.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "illuminate/events": "^11.0 || ^12.0"
+    },
+    "suggest": {
+        "spatie/laravel-medialibrary": "Allows attaching images to pending modifications via Concerns\\HasModificationMedia.",
+        "spatie/laravel-schemaless-attributes": "Allows applying approved diffs onto schemaless attribute columns."
+    },
+    "autoload": {
+        "psr-4": {
+            "ReynoTECH\\Approvals\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ReynoTECH\\Approvals\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ReynoTECH\\Approvals\\ApprovalsServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "release:patch": "bin/bump-version.sh patch",
+        "release:minor": "bin/bump-version.sh minor",
+        "release:major": "bin/bump-version.sh major"
+    },
+    "authors": [
+        {
+            "name": "Samuel Casas",
+            "email": "samuel@reyno.tech"
+        }
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

@@ -6,6 +6,7 @@ namespace ReynoTECH\Approvals\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use ReynoTECH\Approvals\Models\Modification;
+use ReynoTECH\Approvals\Models\ModificationItem;
 use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
 
 /**
@@ -14,6 +15,11 @@ use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
  * On `saving`, an update is either captured as a pending Modification (when
  * requiresApprovalWhen()/requiresApproval() says so), recorded as a full
  * audit Modification row (the default), or saved as-is.
+ *
+ * A pending Modification is decided as a whole by approve()/disapprove()
+ * unless the model opts into per-group decisions by overriding
+ * approvableItemGroups(): in that case each group becomes a ModificationItem
+ * that can be approved/rejected independently via approveItem()/disapproveItem().
  */
 trait RequiresApprovalWhenChanges
 {
@@ -44,6 +50,8 @@ trait RequiresApprovalWhenChanges
     private bool $modelApproval = false;
 
     private $modelApprovalFn = null;
+
+    private ?string $operationId = null;
 
     public static function bootRequiresApprovalWhenChanges(): void
     {
@@ -84,6 +92,17 @@ trait RequiresApprovalWhenChanges
         return false;
     }
 
+    /**
+     * Opt-in: return the field groups that should be decided independently
+     * of one another, e.g. ['rules' => ['rules'], 'notes' => ['notes']].
+     * Keys not covered by any group stay bundled as a single decision on
+     * the parent Modification (legacy behavior, no ModificationItem rows).
+     */
+    protected function approvableItemGroups(array $dirtyKeys): array
+    {
+        return [];
+    }
+
     public function modifications(): MorphMany
     {
         return $this->morphMany(ResolvesApprovalModels::modificationClass(), 'modifiable');
@@ -110,19 +129,7 @@ trait RequiresApprovalWhenChanges
         if ($approved && $this->updateWhenApproved) {
             $this->setForcedApprovalUpdate(true);
 
-            $modifiedKey = self::modifiedDiffKey();
-
-            foreach ($modification->modifications as $key => $mod) {
-                $current = $this->{$key};
-
-                if (is_object($current) && method_exists($current, 'set')) {
-                    foreach ($mod[$modifiedKey] as $k => $v) {
-                        $current->set($k, $v);
-                    }
-                } else {
-                    $this->{$key} = $mod[$modifiedKey];
-                }
-            }
+            self::applyLegacyDiff($this, $modification->modifications->toArray());
 
             $this->noSaveModifications();
 
@@ -131,16 +138,39 @@ trait RequiresApprovalWhenChanges
             if ($this->deleteWhenApproved) {
                 $modification->delete();
             } else {
-                $modification->active = false;
+                $modification->status = Modification::STATUS_APPROVED;
                 $modification->save();
             }
         } elseif ($approved === false) {
             if ($this->deleteWhenDisapproved) {
                 $modification->delete();
             } else {
-                $modification->active = false;
+                $modification->status = Modification::STATUS_REJECTED;
                 $modification->save();
             }
+        }
+    }
+
+    /**
+     * Applies (or rejects) a single ModificationItem's proposed values,
+     * touching only the fields captured in that item.
+     */
+    public function applyModificationItemChanges(ModificationItem $item, bool $approved): void
+    {
+        if ($approved && $this->updateWhenApproved) {
+            $this->setForcedApprovalUpdate(true);
+
+            self::applyLegacyDiff($this, self::itemDiffToLegacyShape($item));
+
+            $this->noSaveModifications();
+
+            $this->save();
+
+            $item->status = 'applied';
+            $item->save();
+        } elseif ($approved === false) {
+            $item->status = 'rejected';
+            $item->save();
         }
     }
 
@@ -198,6 +228,18 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    public function withOperationId(?string $operationId): static
+    {
+        $this->operationId = $operationId;
+
+        return $this;
+    }
+
+    public function currentOperationId(): ?string
+    {
+        return $this->operationId;
+    }
+
     public function getLastModification(): ?Modification
     {
         return $this->lastModification;
@@ -210,12 +252,63 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * Explicit history API for events that don't go through `saving`
+     * (creation, deletion, attachments, signatures, external integrations).
+     * Always recorded as an applied, direct Modification: it documents
+     * something that already happened, it does not gate anything.
+     *
+     * $items entries look like: ['key' => 'attachments.contract', 'original' => null, 'proposed' => [...]].
+     */
+    public function recordModification(
+        string $eventType,
+        array $items = [],
+        ?array $context = null,
+        ?string $operationId = null,
+        ?\DateTimeInterface $occurredAt = null
+    ): Modification {
+        $originalKey = self::originalDiffKey();
+        $modifiedKey = self::modifiedDiffKey();
+
+        $diff = [];
+        foreach ($items as $entry) {
+            $diff[$entry['key']] = [
+                $originalKey => $entry['original'] ?? null,
+                $modifiedKey => $entry['proposed'] ?? null,
+            ];
+        }
+
+        $modificationModel = ResolvesApprovalModels::modificationClass();
+        $modification = new $modificationModel();
+
+        self::fillModificationModel(
+            item: $this,
+            modification: $modification,
+            diff: $diff,
+            flow: Modification::FLOW_DIRECT,
+            status: Modification::STATUS_APPLIED,
+            approversRequired: 0,
+            disapproversRequired: 0,
+            operationId: $operationId ?? $this->currentOperationId(),
+            eventType: $eventType,
+            context: $context,
+            occurredAt: $occurredAt
+        );
+
+        $this->modifications()->save($modification);
+
+        $this->setLastModification($modification);
+
+        return $modification;
+    }
+
     public static function captureSave($item): bool
     {
         $diff = self::buildModificationDiff($item);
 
         $hasModificationPending = $item->modifications()
-            ->activeOnly()
+            ->where('flow', Modification::FLOW_APPROVAL)
+            ->where('status', Modification::STATUS_PENDING)
             ->where('md5', md5(json_encode($diff)))
             ->first();
 
@@ -226,14 +319,23 @@ trait RequiresApprovalWhenChanges
             item: $item,
             modification: $modification,
             diff: $diff,
-            active: true,
-            isModification: true,
+            flow: Modification::FLOW_APPROVAL,
+            status: Modification::STATUS_PENDING,
             approversRequired: (int) $item->approversRequired,
-            disapproversRequired: (int) $item->disapproversRequired
+            disapproversRequired: (int) $item->disapproversRequired,
+            operationId: $item->currentOperationId()
         );
 
         if (!$hasModificationPending) {
             $item->modifications()->save($modification);
+        }
+
+        if (!$hasModificationPending) {
+            $groups = self::resolveApprovableGroups($item, $diff);
+
+            if ($groups) {
+                self::createItemsForGroups($modification, $groups, $item);
+            }
         }
 
         $item->setLastModification($modification);
@@ -253,10 +355,11 @@ trait RequiresApprovalWhenChanges
                 item: $item,
                 modification: $modification,
                 diff: $diff,
-                active: false,
-                isModification: false,
+                flow: Modification::FLOW_DIRECT,
+                status: Modification::STATUS_APPLIED,
                 approversRequired: 0,
-                disapproversRequired: 0
+                disapproversRequired: 0,
+                operationId: $item->currentOperationId()
             );
 
             $item->modifications()->save($modification);
@@ -265,6 +368,93 @@ trait RequiresApprovalWhenChanges
         }
 
         return true;
+    }
+
+    /**
+     * Splits the field groups declared by approvableItemGroups() into the
+     * ones that actually changed in this diff, keyed by group name.
+     */
+    private static function resolveApprovableGroups($item, array $diff): array
+    {
+        $groups = $item->approvableItemGroups(array_keys($diff));
+
+        return collect($groups)
+            ->map(fn ($fields) => array_values(array_intersect($fields, array_keys($diff))))
+            ->filter(fn ($fields) => count($fields) > 0)
+            ->all();
+    }
+
+    private static function createItemsForGroups(Modification $modification, array $groups, $item): void
+    {
+        $itemModel = ResolvesApprovalModels::modificationItemClass();
+        $originalKey = self::originalDiffKey();
+        $modifiedKey = self::modifiedDiffKey();
+        $diff = $modification->modifications->toArray();
+
+        foreach ($groups as $key => $fields) {
+            $original = [];
+            $proposed = [];
+
+            foreach ($fields as $field) {
+                $row = $diff[$field] ?? null;
+
+                if ($row === null) {
+                    continue;
+                }
+
+                $original[$field] = $row[$originalKey];
+                $proposed[$field] = $row[$modifiedKey];
+            }
+
+            $itemModel::updateOrCreate(
+                ['modification_id' => $modification->id, 'key' => $key],
+                [
+                    'original' => $original,
+                    'proposed' => $proposed,
+                    'status' => 'pending',
+                    'approvers_required' => (int) $item->approversRequired,
+                    'disapprovers_required' => (int) $item->disapproversRequired,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Applies a legacy-shaped diff (`['field' => ['ori' => ..., 'mod' => ...]]`)
+     * onto a model, mutating only the fields present in the diff.
+     */
+    private static function applyLegacyDiff($model, array $diff): void
+    {
+        $modifiedKey = self::modifiedDiffKey();
+
+        foreach ($diff as $key => $mod) {
+            $current = $model->{$key};
+
+            if (is_object($current) && method_exists($current, 'set')) {
+                foreach ($mod[$modifiedKey] as $k => $v) {
+                    $current->set($k, $v);
+                }
+            } else {
+                $model->{$key} = $mod[$modifiedKey];
+            }
+        }
+    }
+
+    private static function itemDiffToLegacyShape(ModificationItem $item): array
+    {
+        $originalKey = self::originalDiffKey();
+        $modifiedKey = self::modifiedDiffKey();
+
+        $diff = [];
+
+        foreach ($item->proposed->toArray() as $key => $value) {
+            $diff[$key] = [
+                $originalKey => $item->original[$key] ?? null,
+                $modifiedKey => $value,
+            ];
+        }
+
+        return $diff;
     }
 
     /**
@@ -352,19 +542,36 @@ trait RequiresApprovalWhenChanges
         $item,
         $modification,
         $diff,
-        bool $active,
-        bool $isModification,
+        string $flow,
+        string $status,
         int $approversRequired,
-        int $disapproversRequired
+        int $disapproversRequired,
+        ?string $operationId = null,
+        ?string $eventType = null,
+        ?array $context = null,
+        ?\DateTimeInterface $occurredAt = null
     ): void {
         $modifier = $item->modifier();
 
-        $modification->active = $active;
+        $modification->flow = $flow;
+        $modification->status = $status;
         $modification->modifications = $diff;
         $modification->approvers_required = $approversRequired;
         $modification->disapprovers_required = $disapproversRequired;
         $modification->md5 = md5(json_encode($diff));
-        $modification->is_modification = $isModification;
+        $modification->occurred_at = $occurredAt ?? new \DateTimeImmutable();
+
+        if ($operationId) {
+            $modification->operation_id = $operationId;
+        }
+
+        if ($eventType) {
+            $modification->event_type = $eventType;
+        }
+
+        if ($context !== null) {
+            $modification->context = $context;
+        }
 
         if ($modifier && ($modifierClass = get_class($modifier))) {
             $modifierInstance = new $modifierClass();

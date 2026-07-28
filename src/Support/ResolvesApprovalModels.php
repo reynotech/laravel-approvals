@@ -7,6 +7,7 @@ namespace ReynoTECH\Approvals\Support;
 use ReynoTECH\Approvals\Models\Approval;
 use ReynoTECH\Approvals\Models\Disapproval;
 use ReynoTECH\Approvals\Models\Modification;
+use ReynoTECH\Approvals\Models\ModificationItem;
 
 /**
  * Resolves the model classes to use for modifications/approvals/disapprovals,
@@ -18,6 +19,11 @@ class ResolvesApprovalModels
     public static function modificationClass(): string
     {
         return config('approvals.models.modification', Modification::class);
+    }
+
+    public static function modificationItemClass(): string
+    {
+        return config('approvals.models.modification_item', ModificationItem::class);
     }
 
     public static function approvalClass(): string

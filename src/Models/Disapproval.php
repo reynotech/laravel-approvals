@@ -24,4 +24,9 @@ class Disapproval extends Model
     {
         return $this->belongsTo(ResolvesApprovalModels::modificationClass());
     }
+
+    public function modificationItem(): BelongsTo
+    {
+        return $this->belongsTo(ResolvesApprovalModels::modificationItemClass());
+    }
 }

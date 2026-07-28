@@ -13,6 +13,8 @@ return function (): void {
         $table->increments('id');
         $table->string('name');
         $table->string('status')->default('draft');
+        $table->string('rules')->nullable();
+        $table->string('notes')->nullable();
         $table->timestamps();
     });
 

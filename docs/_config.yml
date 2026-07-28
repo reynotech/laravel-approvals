@@ -1,0 +1,4 @@
+title: Laravel Approvals
+description: Approval workflows for Eloquent models — capture pending changes, gate them behind N approvers/disapprovers, and apply the diff once approved.
+theme: jekyll-theme-cayman
+show_downloads: false

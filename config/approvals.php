@@ -15,6 +15,7 @@ return [
     */
     'models' => [
         'modification' => \ReynoTECH\Approvals\Models\Modification::class,
+        'modification_item' => \ReynoTECH\Approvals\Models\ModificationItem::class,
         'approval' => \ReynoTECH\Approvals\Models\Approval::class,
         'disapproval' => \ReynoTECH\Approvals\Models\Disapproval::class,
     ],

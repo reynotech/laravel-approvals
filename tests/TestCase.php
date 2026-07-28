@@ -20,6 +20,7 @@ abstract class TestCase extends BaseTestCase
         test_set_config('approvals.models.modification', \ReynoTECH\Approvals\Models\Modification::class);
         test_set_config('approvals.models.approval', \ReynoTECH\Approvals\Models\Approval::class);
         test_set_config('approvals.models.disapproval', \ReynoTECH\Approvals\Models\Disapproval::class);
+        test_set_config('approvals.models.modification_item', \ReynoTECH\Approvals\Models\ModificationItem::class);
 
         $capsule = new Capsule();
         $capsule->addConnection([
@@ -42,6 +43,7 @@ abstract class TestCase extends BaseTestCase
         Facade::setFacadeApplication($capsule->getContainer());
 
         (require __DIR__ . '/../database/migrations/2024_01_01_000000_create_approvals_tables.php')->up();
+        (require __DIR__ . '/../database/migrations/2024_01_02_000000_add_flow_and_modification_items.php')->up();
         (require __DIR__ . '/Fixtures/create_fixture_tables.php')();
     }
 }

@@ -44,6 +44,7 @@ abstract class TestCase extends BaseTestCase
 
         (require __DIR__ . '/../database/migrations/2024_01_01_000000_create_approvals_tables.php')->up();
         (require __DIR__ . '/../database/migrations/2024_01_02_000000_add_flow_and_modification_items.php')->up();
+        (require __DIR__ . '/../database/migrations/2024_01_03_000000_add_approval_lookup_indexes.php')->up();
         (require __DIR__ . '/Fixtures/create_fixture_tables.php')();
     }
 }

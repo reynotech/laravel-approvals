@@ -2,9 +2,14 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-### Unreleased
+### 0.4.0 - 2026-08-25
 - Added support for Laravel 13 (`illuminate/*` ^13.0). Laravel 11 and 12 remain supported.
 - Added idempotent lookup indexes for approval owners and pending-modification queries, including legacy installations whose pre-existing tables skipped the package's create migration.
+
+### 0.3.1 - 2026-07-28
+- Reworked the `create_approvals_tables` migration so it is idempotent on installations whose tables already exist.
+
+### 0.3.0 - 2026-07-28
 - `Modification` gains `flow` (`direct`/`approval`), `status` (`applied`/`pending`/`approved`/`rejected`/`partially_resolved`), `event_type`, `operation_id`, `context`, `occurred_at`. `active`/`is_modification` are now derived from `flow`/`status` and kept for backward compatibility.
 - Added `ModificationItem` (`modification_items` table): an opt-in, per-group decidable unit inside a `Modification`. A model opts in by overriding `approvableItemGroups()`; groups store their diff as JSON `original`/`proposed` (like the existing diff format), not one row per field, to keep this an audit-friendly, low-row-count design.
 - Added `modification_item_id` (nullable) to `approvals`/`disapprovals`: a vote scoped to an item decides only that item; a vote without it is a global decision, unchanged from before.

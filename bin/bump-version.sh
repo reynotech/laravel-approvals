@@ -73,11 +73,11 @@ echo "Bumping $LATEST_TAG -> $NEW_TAG ($LEVEL)"
 CHANGELOG="CHANGELOG.md"
 TODAY=$(date +%Y-%m-%d)
 
-if [[ -f "$CHANGELOG" ]] && grep -q '^## Unreleased' "$CHANGELOG"; then
+if [[ -f "$CHANGELOG" ]] && grep -qE '^#{2,3} Unreleased' "$CHANGELOG"; then
     if [[ "$DRY_RUN" == true ]]; then
-        echo "[dry-run] Would rename '## Unreleased' to '### ${NEW_VERSION} - ${TODAY}' in $CHANGELOG"
+        echo "[dry-run] Would rename 'Unreleased' to '### ${NEW_VERSION} - ${TODAY}' in $CHANGELOG"
     else
-        sed -i '' "s/^## Unreleased/### ${NEW_VERSION} - ${TODAY}/" "$CHANGELOG"
+        sed -i '' -E "s/^#{2,3} Unreleased/### ${NEW_VERSION} - ${TODAY}/" "$CHANGELOG"
         git add "$CHANGELOG"
         git commit -m "chore: release ${NEW_TAG}"
     fi

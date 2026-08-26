@@ -21,7 +21,7 @@ Approval workflows for Eloquent models: capture a pending change as a `Modificat
 ## Requirements
 
 - PHP 8.2+
-- `illuminate/database` / `illuminate/support` ^11 || ^12
+- `illuminate/database` / `illuminate/support` ^11 || ^12 || ^13 (Laravel 13 requires PHP 8.3+)
 
 ## Installation
 

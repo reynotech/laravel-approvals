@@ -8,7 +8,7 @@ Extracted from `rex-server-next`'s `RequiresApprovalWhenChanges` / `ApprovesChan
 
 ### Requirements
 - PHP 8.2+
-- `illuminate/database` / `illuminate/support` ^11 || ^12
+- `illuminate/database` / `illuminate/support` ^11 || ^12 || ^13 (Laravel 13 requires PHP 8.3+)
 
 ### Installation
 ```bash

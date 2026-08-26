@@ -6,13 +6,13 @@
     "keywords": ["laravel", "eloquent", "approval", "workflow", "moderation"],
     "require": {
         "php": "^8.2",
-        "illuminate/database": "^11.0 || ^12.0",
-        "illuminate/support": "^11.0 || ^12.0",
+        "illuminate/database": "^11.0 || ^12.0 || ^13.0",
+        "illuminate/support": "^11.0 || ^12.0 || ^13.0",
         "rogervila/array-diff-multidimensional": "^2.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.5",
-        "illuminate/events": "^11.0 || ^12.0"
+        "illuminate/events": "^11.0 || ^12.0 || ^13.0"
     },
     "suggest": {
         "spatie/laravel-medialibrary": "Allows attaching images to pending modifications via Concerns\\HasModificationMedia.",

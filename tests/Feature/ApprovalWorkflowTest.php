@@ -80,6 +80,19 @@ final class ApprovalWorkflowTest extends TestCase
         );
     }
 
+    public function test_a_datetime_attribute_keeps_its_time_in_the_diff(): void
+    {
+        $model = ApprovableModel::create(['name' => 'Fire Panel']);
+
+        $model->notes = '2026-10-21 14:35:12';
+        $model->save();
+
+        $this->assertSame(
+            '2026-10-21 14:35:12',
+            Modification::query()->latest('id')->first()->modifications['notes']['mod'],
+        );
+    }
+
     public function test_reaching_the_required_approvals_applies_the_change(): void
     {
         $model = ApprovableModel::create(['name' => 'Fire Panel', 'status' => 'draft']);

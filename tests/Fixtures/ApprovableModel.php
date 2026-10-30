@@ -16,7 +16,7 @@ class ApprovableModel extends Model implements Approvable
 
     protected $guarded = ['id'];
 
-    protected $casts = ['rules' => 'array'];
+    protected $casts = ['rules' => 'array', 'notes' => 'datetime'];
 
     /** Toggled by tests to force the approval-gating branch on. */
     public bool $gateChanges = false;

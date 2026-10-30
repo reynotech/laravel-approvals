@@ -466,6 +466,20 @@ trait RequiresApprovalWhenChanges
      * Builds the diff payload stored in modifications.modifications.
      * All diffs are treated as multidimensional.
      */
+    /**
+     * A `date` cast keeps `Y-m-d`; any other date (`datetime`, `timestamp`, custom formats) keeps its
+     * time, in the model's own storage format, so the diff doesn't silently drop the hour.
+     */
+    private static function serializeDiffDate($item, string $key, \DateTimeInterface $value): string
+    {
+        $cast = strtolower((string) ($item->getCasts()[$key] ?? ''));
+        $dateOnly = in_array($cast, ['date', 'immutable_date'], true)
+            || str_starts_with($cast, 'date:')
+            || str_starts_with($cast, 'immutable_date:');
+
+        return $dateOnly ? $value->format('Y-m-d') : $item->fromDateTime($value);
+    }
+
     private static function buildModificationDiff($item): array|false
     {
         $getReal = function ($key, $val) {
@@ -523,7 +537,7 @@ trait RequiresApprovalWhenChanges
 
             return [
                 $originalKey => $item->getRawOriginal($key),
-                $modifiedKey => $item->{$key} instanceof \DateTime ? $item->{$key}->format('Y-m-d') : $item->{$key},
+                $modifiedKey => $item->{$key} instanceof \DateTimeInterface ? self::serializeDiffDate($item, $key, $item->{$key}) : $item->{$key},
             ];
         };
 

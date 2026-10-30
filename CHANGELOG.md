@@ -3,6 +3,7 @@
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
+- Fixed: a `datetime`/`timestamp` attribute lost its time in the diff (it was always formatted `Y-m-d`). Only `date` casts keep `Y-m-d` now; any other date keeps the model's storage format.
 - Fixed: setting an array/`ArrayAccess` attribute (e.g. a JSON column cast to `array`) to `null` or a scalar threw `$array1 must be an array!` while building the diff. It's now recorded as a whole replacement (`ori` = previous value, `mod` = new value).
 
 ### 0.4.1 - 2026-10-30

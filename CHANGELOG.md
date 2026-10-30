@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+### 0.4.1 - 2026-10-30
 - Fixed: saving the same gated change while an identical one is still pending no longer refills the pending `Modification` in memory with the new requester/reason/date (without saving it). The original request is kept untouched and returned by `getLastModification()`.
 
 ### 0.4.0 - 2026-08-25

@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+- Fixed: setting an array/`ArrayAccess` attribute (e.g. a JSON column cast to `array`) to `null` or a scalar threw `$array1 must be an array!` while building the diff. It's now recorded as a whole replacement (`ori` = previous value, `mod` = new value).
+
 ### 0.4.1 - 2026-10-30
 - Fixed: saving the same gated change while an identical one is still pending no longer refills the pending `Modification` in memory with the new requester/reason/date (without saving it). The original request is kept untouched and returned by `getLastModification()`.
 

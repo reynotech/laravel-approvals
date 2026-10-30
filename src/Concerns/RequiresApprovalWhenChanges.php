@@ -484,8 +484,24 @@ trait RequiresApprovalWhenChanges
 
         $diffFn = fn ($modified, $original) => array_diff_multidimensional($modified, $original);
 
-        $buildRow = function ($key) use ($item, $getReal, $diffFn, $originalKey, $modifiedKey) {
+        // An array/ArrayAccess attribute replaced by a scalar or null (e.g. clearing a JSON column)
+        // can't be diffed key by key: it's recorded as a whole replacement.
+        $replacesStructure = function ($original, $modified): bool {
+            $isStructure = fn ($value): bool => is_array($value) || $value instanceof \ArrayAccess;
+
+            return $isStructure($original) && ! $isStructure($modified);
+        };
+
+        $buildRow = function ($key) use ($item, $getReal, $diffFn, $originalKey, $modifiedKey, $replacesStructure) {
             $original = $item->getOriginal($key);
+            $modified = $getReal($key, $item->{$key});
+
+            if ($replacesStructure($original, $modified)) {
+                return [
+                    $originalKey => $original instanceof \ArrayAccess ? $original->toArray() : $original,
+                    $modifiedKey => $modified,
+                ];
+            }
 
             if (is_array($original)) {
                 $d = $diffFn($getReal($key, $item->{$key}), $original);
@@ -511,8 +527,12 @@ trait RequiresApprovalWhenChanges
             ];
         };
 
-        $isNoopChange = function ($key) use ($item, $getReal, $diffFn) {
+        $isNoopChange = function ($key) use ($item, $getReal, $diffFn, $replacesStructure) {
             $original = $item->getOriginal($key);
+
+            if ($replacesStructure($original, $getReal($key, $item->{$key}))) {
+                return false;
+            }
 
             if (is_array($original)) {
                 return count($diffFn($getReal($key, $item->{$key}), $original)) === 0;

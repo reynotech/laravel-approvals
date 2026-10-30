@@ -66,6 +66,20 @@ final class ApprovalWorkflowTest extends TestCase
         $this->assertSame('first-request', $original->fresh()->operation_id);
     }
 
+    public function test_clearing_an_array_attribute_records_the_whole_replacement(): void
+    {
+        $model = ApprovableModel::create(['name' => 'Fire Panel', 'rules' => ['zone' => 'north', 'radius' => 50]]);
+
+        $model->rules = null;
+        $model->save();
+
+        $this->assertNull($model->fresh()->rules);
+        $this->assertSame(
+            ['ori' => ['zone' => 'north', 'radius' => 50], 'mod' => null],
+            Modification::query()->latest('id')->first()->modifications['rules'],
+        );
+    }
+
     public function test_reaching_the_required_approvals_applies_the_change(): void
     {
         $model = ApprovableModel::create(['name' => 'Fire Panel', 'status' => 'draft']);

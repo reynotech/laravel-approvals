@@ -312,8 +312,17 @@ trait RequiresApprovalWhenChanges
             ->where('md5', md5(json_encode($diff)))
             ->first();
 
+        // The same change is already waiting for approval: don't duplicate or rewrite it. Refilling
+        // it in memory (requester, reason, date) without saving left callers reporting data the
+        // stored row didn't have. The original request wins.
+        if ($hasModificationPending) {
+            $item->setLastModification($hasModificationPending);
+
+            return false;
+        }
+
         $modificationModel = ResolvesApprovalModels::modificationClass();
-        $modification = $hasModificationPending ?? new $modificationModel();
+        $modification = new $modificationModel();
 
         self::fillModificationModel(
             item: $item,
@@ -326,16 +335,12 @@ trait RequiresApprovalWhenChanges
             operationId: $item->currentOperationId()
         );
 
-        if (!$hasModificationPending) {
-            $item->modifications()->save($modification);
-        }
+        $item->modifications()->save($modification);
 
-        if (!$hasModificationPending) {
-            $groups = self::resolveApprovableGroups($item, $diff);
+        $groups = self::resolveApprovableGroups($item, $diff);
 
-            if ($groups) {
-                self::createItemsForGroups($modification, $groups, $item);
-            }
+        if ($groups) {
+            self::createItemsForGroups($modification, $groups, $item);
         }
 
         $item->setLastModification($modification);

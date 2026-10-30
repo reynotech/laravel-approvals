@@ -44,6 +44,28 @@ final class ApprovalWorkflowTest extends TestCase
         $this->assertSame(['status' => ['ori' => 'draft', 'mod' => 'active']], $modification->modifications->toArray());
     }
 
+    public function test_resubmitting_a_pending_change_keeps_the_original_request(): void
+    {
+        $model = ApprovableModel::create(['name' => 'Fire Panel', 'status' => 'draft']);
+
+        $model->gateChanges = true;
+        $model->withOperationId('first-request');
+        $model->status = 'active';
+        $model->save();
+        $original = Modification::first();
+
+        $again = ApprovableModel::find($model->id);
+        $again->gateChanges = true;
+        $again->withOperationId('second-request');
+        $again->status = 'active';
+        $again->save();
+
+        $this->assertSame(1, Modification::count(), 'the same pending change must not be duplicated');
+        $this->assertSame($original->id, $again->getLastModification()?->id);
+        $this->assertSame('first-request', $again->getLastModification()?->operation_id);
+        $this->assertSame('first-request', $original->fresh()->operation_id);
+    }
+
     public function test_reaching_the_required_approvals_applies_the_change(): void
     {
         $model = ApprovableModel::create(['name' => 'Fire Panel', 'status' => 'draft']);

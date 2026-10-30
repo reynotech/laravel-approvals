@@ -2,6 +2,9 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+- Fixed: saving the same gated change while an identical one is still pending no longer refills the pending `Modification` in memory with the new requester/reason/date (without saving it). The original request is kept untouched and returned by `getLastModification()`.
+
 ### 0.4.0 - 2026-08-25
 - Added support for Laravel 13 (`illuminate/*` ^13.0). Laravel 11 and 12 remain supported.
 - Added idempotent lookup indexes for approval owners and pending-modification queries, including legacy installations whose pre-existing tables skipped the package's create migration.

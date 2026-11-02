@@ -35,7 +35,7 @@ title: Modification & History
 - `ori` — the attribute's value before the change (from `getOriginal()`/`getRawOriginal()`).
 - `mod` — the attribute's value after the change, i.e. what gets written back once approved.
 
-For array-like/schemaless attributes, `ori`/`mod` only contain the sub-keys that actually changed rather than the whole structure.
+For array and collection attributes, `ori`/`mod` hold the whole value, since that's what gets written back. Attributes exposing a `set($key, $value)` method (e.g. `spatie/laravel-schemaless-attributes`) are the exception: `ori`/`mod` only contain the sub-keys that changed, and those are merged on approval.
 
 The `ori`/`mod` key names can be renamed via config, in case they collide with something in your app:
 

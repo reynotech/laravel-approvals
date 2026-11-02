@@ -508,7 +508,15 @@ trait RequiresApprovalWhenChanges
             return $isStructure($original) && ! $isStructure($modified);
         };
 
-        $buildRow = function ($key) use ($item, $getReal, $diffFn, $originalKey, $modifiedKey, $replacesStructure) {
+        // Arrays and collections are written back whole, so that's what the diff keeps: positions or
+        // sub-keys alone can't say what was removed, and approving them would replace the column with
+        // just that fragment. Only an object exposing `set()` (a schemaless attribute) can be merged.
+        $isWholeValue = fn ($value): bool => is_array($value)
+            || ($value instanceof \ArrayAccess && ! method_exists($value, 'set'));
+
+        $plain = fn ($value) => $value instanceof \ArrayAccess ? $value->toArray() : $value;
+
+        $buildRow = function ($key) use ($item, $getReal, $diffFn, $originalKey, $modifiedKey, $replacesStructure, $isWholeValue, $plain) {
             $original = $item->getOriginal($key);
             $modified = $getReal($key, $item->{$key});
 
@@ -519,12 +527,10 @@ trait RequiresApprovalWhenChanges
                 ];
             }
 
-            if (is_array($original)) {
-                $d = $diffFn($getReal($key, $item->{$key}), $original);
-
+            if ($isWholeValue($original)) {
                 return [
-                    $originalKey => collect($original)->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
-                    $modifiedKey => collect($getReal($key, $item->{$key}))->where(fn ($v, $k) => in_array($k, array_keys($d)))->toArray(),
+                    $originalKey => $plain($original),
+                    $modifiedKey => $plain($modified),
                 ];
             }
 
@@ -543,15 +549,18 @@ trait RequiresApprovalWhenChanges
             ];
         };
 
-        $isNoopChange = function ($key) use ($item, $getReal, $diffFn, $replacesStructure) {
+        $isNoopChange = function ($key) use ($item, $getReal, $diffFn, $replacesStructure, $isWholeValue, $plain) {
             $original = $item->getOriginal($key);
 
             if ($replacesStructure($original, $getReal($key, $item->{$key}))) {
                 return false;
             }
 
-            if (is_array($original)) {
-                return count($diffFn($getReal($key, $item->{$key}), $original)) === 0;
+            if ($isWholeValue($original)) {
+                $before = $plain($original);
+                $after = $plain($getReal($key, $item->{$key}));
+
+                return count($diffFn($after, $before)) === 0 && count($diffFn($before, $after)) === 0;
             }
 
             if ($original instanceof \ArrayAccess) {

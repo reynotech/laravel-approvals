@@ -435,7 +435,9 @@ trait RequiresApprovalWhenChanges
         foreach ($diff as $key => $mod) {
             $current = $model->{$key};
 
-            if (is_object($current) && method_exists($current, 'set')) {
+            // Only a map of sub-keys can be merged: a date cast also has `set()` (Carbon's), but its
+            // proposed value is a string or null, which replaces the attribute like any other.
+            if (is_array($mod[$modifiedKey]) && is_object($current) && method_exists($current, 'set')) {
                 foreach ($mod[$modifiedKey] as $k => $v) {
                     $current->set($k, $v);
                 }

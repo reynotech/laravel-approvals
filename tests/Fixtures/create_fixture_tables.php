@@ -18,6 +18,20 @@ return function (): void {
         $table->timestamps();
     });
 
+    $schema->dropIfExists('casted_models');
+    $schema->create('casted_models', function (Blueprint $table) {
+        $table->increments('id');
+        $table->string('starts_at')->nullable();
+        $table->string('starts_immutable')->nullable();
+        $table->string('starts_on')->nullable();
+        $table->text('as_array')->nullable();
+        $table->text('as_collection')->nullable();
+        $table->text('as_collection_class')->nullable();
+        $table->text('as_array_object')->nullable();
+        $table->text('extra')->nullable();
+        $table->timestamps();
+    });
+
     $schema->dropIfExists('approver_models');
     $schema->create('approver_models', function (Blueprint $table) {
         $table->increments('id');

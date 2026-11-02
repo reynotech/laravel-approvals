@@ -12,7 +12,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^10.5",
-        "illuminate/events": "^11.0 || ^12.0 || ^13.0"
+        "illuminate/events": "^11.0 || ^12.0 || ^13.0",
+        "spatie/laravel-schemaless-attributes": "^2.6"
     },
     "suggest": {
         "spatie/laravel-medialibrary": "Allows attaching images to pending modifications via Concerns\\HasModificationMedia.",

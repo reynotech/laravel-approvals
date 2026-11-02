@@ -10,7 +10,27 @@ title: Changelog
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-### Unreleased
+### 0.5.0 - 2026-11-02
+- Fixed: approving a change to a date attribute (`date`, `datetime`, `immutable_datetime`) never wrote it, including when clearing it to `null`. Carbon has its own `set()`, so the date was treated as a schemaless attribute: PHP warned on the `foreach` over the proposed string, which a Laravel app turns into an `ErrorException` with the vote saved and the change still pending. Attributes exposing `set()` are now merged key by key only when the proposed value is an array.
+- Fixed: approving a change to an `array`, `collection`, `AsCollection` or `AsArrayObject` attribute replaced the column with only the part that changed, losing the rest. Removing elements or keys recorded nothing: a gated change left a pending row with an empty diff that changed nothing when approved, and a direct one saved without an audit row. `AsArrayObject` attributes threw while building the diff.
+- **Changed:** for those attributes, `ori`/`mod` now hold the whole value instead of the changed sub-keys. Code reading sub-keys from `ori`/`mod` must compare the two sides itself. Attributes exposing `set()` (e.g. schemaless attributes) keep their partial diff.
+- **Upgrading:** `Modification` rows already pending keep their old partial diff, and approving one still replaces the column with that fragment. Resolve them before upgrading.
+
+### 0.4.2 - 2026-10-30
+- Fixed: a `datetime`/`timestamp` attribute lost its time in the diff (it was always formatted `Y-m-d`). Only `date` casts keep `Y-m-d` now; any other date keeps the model's storage format.
+- Fixed: setting an array/`ArrayAccess` attribute (e.g. a JSON column cast to `array`) to `null` or a scalar threw `$array1 must be an array!` while building the diff. It's now recorded as a whole replacement (`ori` = previous value, `mod` = new value).
+
+### 0.4.1 - 2026-10-30
+- Fixed: saving the same gated change while an identical one is still pending no longer refills the pending `Modification` in memory with the new requester/reason/date (without saving it). The original request is kept untouched and returned by `getLastModification()`.
+
+### 0.4.0 - 2026-08-25
+- Added support for Laravel 13 (`illuminate/*` ^13.0). Laravel 11 and 12 remain supported.
+- Added idempotent lookup indexes for approval owners and pending-modification queries, including legacy installations whose pre-existing tables skipped the package's create migration.
+
+### 0.3.1 - 2026-07-28
+- Reworked the `create_approvals_tables` migration so it is idempotent on installations whose tables already exist.
+
+### 0.3.0 - 2026-07-28
 - `Modification` gains `flow` (`direct`/`approval`), `status` (`applied`/`pending`/`approved`/`rejected`/`partially_resolved`), `event_type`, `operation_id`, `context`, `occurred_at`. `active`/`is_modification` are now derived from `flow`/`status` and kept for backward compatibility.
 - Added `ModificationItem` (`modification_items` table): an opt-in, per-group decidable unit inside a `Modification`. A model opts in by overriding `approvableItemGroups()`; groups store their diff as JSON `original`/`proposed` (like the existing diff format), not one row per field, to keep this an audit-friendly, low-row-count design.
 - Added `modification_item_id` (nullable) to `approvals`/`disapprovals`: a vote scoped to an item decides only that item; a vote without it is a global decision, unchanged from before.

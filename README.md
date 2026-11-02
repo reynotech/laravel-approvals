@@ -169,9 +169,17 @@ Pass `withOperationId($id)` before saving (or to `recordModification()`) to tag 
 ### Known limitations
 - Migration uses `nullableMorphs()`/`morphs()`, which assume integer/bigint primary keys on `modifiable`/`modifier`/`approver`/`disapprover`. UUID/ULID-keyed models are not supported out of the box.
 - Only updates go through the approval gate; model creation always saves directly (matching the behavior this package was extracted from).
+- Removing a key from an attribute exposing `set()` (e.g. a schemaless attribute), or clearing it, produces an empty diff, so the change is lost. When gated, it leaves a pending `Modification` that changes nothing when approved.
 
 ### Deprecations
 - `deleteWhenApproved` / `deleteWhenDisapproved` are deprecated: prefer letting the `Modification`/`ModificationItem` row stay and simply reading its `status`. They still work exactly as before.
+
+### Upgrading from < 0.5.0
+`Modification` rows already pending keep their old partial diff, and approving one still replaces the column with that fragment. Resolve them before upgrading.
+
+For `array`, `collection`, `AsCollection` and `AsArrayObject` attributes, `ori`/`mod` now hold the whole value instead of the sub-keys that changed. Code reading sub-keys from them must compare both sides itself. Attributes exposing `set()` (e.g. schemaless attributes) keep their partial diff.
+
+No migration is required.
 
 ### Upgrading from < 0.3.0
 Publish and run the new migration:

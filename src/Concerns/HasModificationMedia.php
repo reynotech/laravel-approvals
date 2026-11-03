@@ -16,12 +16,25 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 trait HasModificationMedia
 {
+    /**
+     * Register the `thumb` (300x200) and `normal` (800x600) image conversions.
+     *
+     * @param  \Spatie\MediaLibrary\MediaCollections\Models\Media|null  $media
+     * @return void
+     */
     public function registerMediaConversions(?Media $media = null): void
     {
         $this->addMediaConversion('thumb')->fit(Fit::Contain, 300, 200);
         $this->addMediaConversion('normal')->fit(Fit::Contain, 800, 600);
     }
 
+    /**
+     * Attach an image to the `main` media collection.
+     *
+     * @param  \Illuminate\Http\UploadedFile  $image
+     * @param  array<string, mixed>  $meta  `n` or `name` and `l` or `label` are required. `d` or `description`, `h` or `helpText`, and `i`, `imageIndex` or `index` are optional.
+     * @return \Spatie\MediaLibrary\MediaCollections\Models\Media
+     */
     public function addImage(UploadedFile $image, array $meta): Media
     {
         $name = $image->hashName();
@@ -40,6 +53,13 @@ trait HasModificationMedia
             ->toMediaCollection('main');
     }
 
+    /**
+     * The name, the label and the URL of each requested size of an image.
+     *
+     * @param  \Spatie\MediaLibrary\MediaCollections\Models\Media|null  $media
+     * @param  array<int, string>  $loads  Any of `thumb`, `normal` and `original`.
+     * @return array<string, mixed>|null  Null when there's no image.
+     */
     public static function imageLoad(?Media $media, array $loads = ['thumb', 'normal', 'original']): ?array
     {
         if (!$media) {

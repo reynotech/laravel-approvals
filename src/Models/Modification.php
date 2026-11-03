@@ -14,20 +14,67 @@ use ReynoTECH\Approvals\Scopes\ApprovalDraftScope;
 use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
 use ReynoTECH\Approvals\Support\VoteNotApplied;
 
+/**
+ * A change to a model: an audit row if it was saved directly, or a request if it's waiting for approval.
+ *
+ * Holds the change as a diff in `modifications`, and its votes in `approvals` and `disapprovals`.
+ *
+ * @property string|null $modifiable_type
+ * @property int|null $modifiable_id  Null until a deferred creation is approved.
+ * @property string|null $modifier_type
+ * @property int|null $modifier_id
+ * @property string|null $flow  One of the FLOW_ constants.
+ * @property string|null $status  One of the STATUS_ constants.
+ * @property string|null $event_type
+ * @property string|null $operation_id
+ * @property bool $is_update  False for a creation.
+ * @property bool $active  Legacy flag, derived from `flow` and `status`.
+ * @property bool $is_modification  Legacy flag, derived from `flow` and `status`.
+ * @property int $approvers_required
+ * @property int $disapprovers_required
+ * @property string $md5  Identifies an identical pending change.
+ * @property \Illuminate\Database\Eloquent\Casts\ArrayObject $modifications  The diff, keyed by attribute.
+ * @property \Illuminate\Database\Eloquent\Casts\ArrayObject|null $meta
+ * @property \Illuminate\Database\Eloquent\Casts\ArrayObject|null $context
+ * @property \Illuminate\Support\Carbon|null $occurred_at  When the change was requested or saved.
+ * @property-read int $approvers_remaining
+ * @property-read int $disapprovers_remaining
+ */
 class Modification extends Model
 {
+    /**
+     * An audit row for a change that was saved directly.
+     */
     public const FLOW_DIRECT = 'direct';
 
+    /**
+     * A change held for approval.
+     */
     public const FLOW_APPROVAL = 'approval';
 
+    /**
+     * Status of a direct audit row.
+     */
     public const STATUS_APPLIED = 'applied';
 
+    /**
+     * Waiting for a decision.
+     */
     public const STATUS_PENDING = 'pending';
 
+    /**
+     * Approved, and applied unless the model has `updateWhenApproved` off.
+     */
     public const STATUS_APPROVED = 'approved';
 
+    /**
+     * Rejected. This is final: send the change again to retry it.
+     */
     public const STATUS_REJECTED = 'rejected';
 
+    /**
+     * Its items are decided, some approved and some rejected.
+     */
     public const STATUS_PARTIALLY_RESOLVED = 'partially_resolved';
 
     protected $table = 'modifications';
@@ -54,36 +101,73 @@ class Modification extends Model
         });
     }
 
+    /**
+     * The model this change belongs to.
+     *
+     * Hides rows waiting for approval. Use modifiableWithDrafts() to reach them.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     */
     public function modifiable(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /**
+     * The model recorded as the author of the change.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     */
     public function modifier(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /**
+     * The approvals cast on this modification and on its items.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function approvals(): HasMany
     {
         return $this->hasMany(ResolvesApprovalModels::approvalClass(), 'modification_id');
     }
 
+    /**
+     * The disapprovals cast on this modification and on its items.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function disapprovals(): HasMany
     {
         return $this->hasMany(ResolvesApprovalModels::disapprovalClass(), 'modification_id');
     }
 
+    /**
+     * The separately decidable parts of this change, if the model defines any.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function items(): HasMany
     {
         return $this->hasMany(ResolvesApprovalModels::modificationItemClass(), 'modification_id');
     }
 
+    /**
+     * Approvals still missing, read as `approvers_remaining`. Votes on items don't count.
+     *
+     * @return int
+     */
     public function getApproversRemainingAttribute(): int
     {
         return $this->approvers_required - $this->approvals()->whereNull('modification_item_id')->count();
     }
 
+    /**
+     * Disapprovals still missing, read as `disapprovers_remaining`. Votes on items don't count.
+     *
+     * @return int
+     */
     public function getDisapproversRemainingAttribute(): int
     {
         return $this->disapprovers_required - $this->disapprovals()->whereNull('modification_item_id')->count();
@@ -114,6 +198,11 @@ class Modification extends Model
         return $this->flow === self::FLOW_APPROVAL && $this->status === self::STATUS_PENDING;
     }
 
+    /**
+     * Whether this requests or records a new row, not a change to an existing one.
+     *
+     * @return bool
+     */
     public function isCreation(): bool
     {
         return $this->is_update === false;
@@ -281,21 +370,45 @@ class Modification extends Model
         return $status;
     }
 
+    /**
+     * Only the rows flagged `active`, which are the pending ones.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeActiveOnly($query)
     {
         return $query->where('active', true);
     }
 
+    /**
+     * Only the rows not flagged `active`: audit rows and decided changes.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeInactiveOnly($query)
     {
         return $query->where('active', false);
     }
 
+    /**
+     * Only changes to existing rows.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeChanges($query)
     {
         return $query->where('is_update', true);
     }
 
+    /**
+     * Only creations.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeCreations($query)
     {
         return $query->where('is_update', false);

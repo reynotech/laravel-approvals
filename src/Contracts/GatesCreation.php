@@ -17,8 +17,14 @@ namespace ReynoTECH\Approvals\Contracts;
  */
 interface GatesCreation
 {
+    /**
+     * No row exists until the creation is approved.
+     */
     public const DEFERRED = 'deferred';
 
+    /**
+     * The row exists from the start, hidden from queries until approved.
+     */
     public const DRAFT = 'draft';
 
     /**
@@ -26,7 +32,17 @@ interface GatesCreation
      */
     public function requiresApprovalOnCreate(array $attributes): bool;
 
+    /**
+     * How a creation is held until it's approved.
+     *
+     * @return string  Either GatesCreation::DEFERRED or GatesCreation::DRAFT.
+     */
     public function approvalCreationMode(): string;
 
+    /**
+     * The boolean column marking a row as waiting for approval in draft mode.
+     *
+     * @return string
+     */
     public function approvalDraftColumn(): string;
 }

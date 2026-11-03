@@ -26,16 +26,37 @@ use ReynoTECH\Approvals\Support\VoteNotApplied;
  */
 trait ApprovesChanges
 {
+    /**
+     * Whether this model may approve the change. Override it to add your rules.
+     *
+     * @param  \ReynoTECH\Approvals\Models\Modification  $modification
+     * @return bool
+     */
     protected function authorizedToApprove(Modification $modification): bool
     {
         return true;
     }
 
+    /**
+     * Whether this model may reject the change. Override it to add your rules.
+     *
+     * @param  \ReynoTECH\Approvals\Models\Modification  $modification
+     * @return bool
+     */
     protected function authorizedToDisapprove(Modification $modification): bool
     {
         return true;
     }
 
+    /**
+     * Vote to approve a modification, or every pending item if it has any.
+     *
+     * The change is applied once enough approvals are in. The vote and its effect share a transaction.
+     *
+     * @param  \ReynoTECH\Approvals\Models\Modification  $modification
+     * @param  string|null  $reason
+     * @return bool  False when the vote wasn't taken or the change couldn't be applied.
+     */
     public function approve(Modification $modification, ?string $reason = null): bool
     {
         if (!$this->authorizedToApprove($modification)) {
@@ -45,6 +66,15 @@ trait ApprovesChanges
         return $this->decideModification($modification, $reason, true);
     }
 
+    /**
+     * Vote to reject a modification, or every pending item if it has any.
+     *
+     * The change is rejected once enough disapprovals are in, and that rejection is final.
+     *
+     * @param  \ReynoTECH\Approvals\Models\Modification  $modification
+     * @param  string|null  $reason
+     * @return bool  False when the vote wasn't taken or the rejection couldn't be applied.
+     */
     public function disapprove(Modification $modification, ?string $reason = null): bool
     {
         if (!$this->authorizedToDisapprove($modification)) {
@@ -54,6 +84,13 @@ trait ApprovesChanges
         return $this->decideModification($modification, $reason, false);
     }
 
+    /**
+     * Vote to approve a single item, without touching the others.
+     *
+     * @param  \ReynoTECH\Approvals\Models\ModificationItem  $item
+     * @param  string|null  $reason
+     * @return bool  False when the vote wasn't taken or the change couldn't be applied.
+     */
     public function approveItem(ModificationItem $item, ?string $reason = null): bool
     {
         $modification = $item->modification;
@@ -65,6 +102,13 @@ trait ApprovesChanges
         return $this->decideItem($item, $reason, true);
     }
 
+    /**
+     * Vote to reject a single item, without touching the others.
+     *
+     * @param  \ReynoTECH\Approvals\Models\ModificationItem  $item
+     * @param  string|null  $reason
+     * @return bool  False when the vote wasn't taken or the rejection couldn't be applied.
+     */
     public function disapproveItem(ModificationItem $item, ?string $reason = null): bool
     {
         $modification = $item->modification;
@@ -76,11 +120,21 @@ trait ApprovesChanges
         return $this->decideItem($item, $reason, false);
     }
 
+    /**
+     * The approvals cast by this model.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     */
     public function approvals(): MorphMany
     {
         return $this->morphMany(ResolvesApprovalModels::approvalClass(), 'approver');
     }
 
+    /**
+     * The disapprovals cast by this model.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     */
     public function disapprovals(): MorphMany
     {
         return $this->morphMany(ResolvesApprovalModels::disapprovalClass(), 'disapprover');

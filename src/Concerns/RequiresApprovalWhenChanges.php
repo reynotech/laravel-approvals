@@ -29,14 +29,29 @@ trait RequiresApprovalWhenChanges
 {
     private static string $binaryDiffKey = '__base64';
 
+    /**
+     * Approvers needed to approve a change. To use another value, override approversRequired().
+     */
     protected int $approversRequired = 1;
 
+    /**
+     * Disapprovers needed to reject a change. To use another value, override disapproversRequired().
+     */
     protected int $disapproversRequired = 1;
 
+    /**
+     * Whether approving writes the change to the model, or only marks it as approved.
+     */
     protected bool $updateWhenApproved = true;
 
+    /**
+     * Whether rejecting deletes the Modification instead of marking it as rejected.
+     */
     protected bool $deleteWhenDisapproved = false;
 
+    /**
+     * Whether approving deletes the Modification instead of marking it as approved.
+     */
     protected bool $deleteWhenApproved = false;
 
     private bool $forcedApprovalUpdate = false;
@@ -63,6 +78,12 @@ trait RequiresApprovalWhenChanges
 
     private ?array $settledAttributes = null;
 
+    /**
+     * Register the model events that hold and audit saves.
+     *
+     * @internal
+     * @return void
+     */
     public static function bootRequiresApprovalWhenChanges(): void
     {
         if (is_subclass_of(static::class, GatesCreation::class)) {
@@ -230,6 +251,13 @@ trait RequiresApprovalWhenChanges
         return [];
     }
 
+    /**
+     * The modifications recorded for this model.
+     *
+     * Read on the connection of the Modification, which may not be the one of this model.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     */
     public function modifications(): MorphMany
     {
         $modificationModel = ResolvesApprovalModels::modificationClass();
@@ -247,6 +275,11 @@ trait RequiresApprovalWhenChanges
         );
     }
 
+    /**
+     * Every creation recorded for this model, decided or not.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, \ReynoTECH\Approvals\Models\Modification>
+     */
     public static function creations()
     {
         $modificationClass = ResolvesApprovalModels::modificationClass();
@@ -278,6 +311,15 @@ trait RequiresApprovalWhenChanges
         return auth()->user();
     }
 
+    /**
+     * Carry out a decision on a modification. Votes call this once they reach the required count.
+     *
+     * If a listener vetoes the save, the modification stays pending.
+     *
+     * @param  \ReynoTECH\Approvals\Models\Modification  $modification
+     * @param  bool  $approved  True to apply the change, false to reject it.
+     * @return void
+     */
     public function applyModificationChanges(Modification $modification, bool $approved): void
     {
         if ($modification->isCreation()) {
@@ -410,16 +452,33 @@ trait RequiresApprovalWhenChanges
         return $saved;
     }
 
+    /**
+     * Whether the next save skips the approval gate.
+     *
+     * @return bool
+     */
     public function isForcedApprovalUpdate(): bool
     {
         return $this->forcedApprovalUpdate;
     }
 
+    /**
+     * Make the next save skip the approval gate. It covers that save only.
+     *
+     * @param  bool  $forced
+     * @return bool  The value just set.
+     */
     public function setForcedApprovalUpdate(bool $forced = true): bool
     {
         return $this->forcedApprovalUpdate = $forced;
     }
 
+    /**
+     * Gate this instance with a callback on every later save.
+     *
+     * @param  callable(array<string, mixed>): bool  $callback  Receives the dirty attributes. Return true to hold the save.
+     * @return $this
+     */
     public function requiresApproval(callable $callback): static
     {
         $this->modelApproval = true;
@@ -428,6 +487,11 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * Stop recording audit rows for this instance's direct saves.
+     *
+     * @return $this
+     */
     public function noSaveModifications(): static
     {
         $this->saveModifications = false;
@@ -435,6 +499,12 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * Attach `meta` to the next Modification this instance produces.
+     *
+     * @param  mixed  $meta
+     * @return $this
+     */
     public function withModificationMeta($meta): static
     {
         $this->modificationMeta = $meta;
@@ -442,6 +512,11 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * Record the full attribute set instead of only the changed attributes.
+     *
+     * @return $this
+     */
     public function withFullSaveModification(): static
     {
         $this->fullSaveModification = true;
@@ -449,6 +524,11 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * Record the full attribute set, but only when an attribute changed.
+     *
+     * @return $this
+     */
     public function withFullSaveOnlyUpdateModification(): static
     {
         $this->fullSaveModification = true;
@@ -461,6 +541,8 @@ trait RequiresApprovalWhenChanges
      * Make the next save produce a Modification even if nothing changed, to record or decide something
      * outside the columns: an applied audit row, or a pending request if the gate holds the save.
      * Every empty diff matches, so a second request while one is pending returns that one and drops its meta.
+     *
+     * @return $this
      */
     public function forceModification(): static
     {
@@ -469,6 +551,12 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * Tag the next Modifications of this instance with a shared operation id.
+     *
+     * @param  string|null  $operationId
+     * @return $this
+     */
     public function withOperationId(?string $operationId): static
     {
         $this->operationId = $operationId;
@@ -476,16 +564,34 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * The operation id set with withOperationId().
+     *
+     * @return string|null
+     */
     public function currentOperationId(): ?string
     {
         return $this->operationId;
     }
 
+    /**
+     * The last Modification this instance created or matched.
+     *
+     * A save that creates none leaves it as it was.
+     *
+     * @return \ReynoTECH\Approvals\Models\Modification|null
+     */
     public function getLastModification(): ?Modification
     {
         return $this->lastModification;
     }
 
+    /**
+     * Set what getLastModification() returns.
+     *
+     * @param  \ReynoTECH\Approvals\Models\Modification|null  $mod
+     * @return $this
+     */
     public function setLastModification(?Modification $mod): static
     {
         $this->lastModification = $mod;
@@ -605,6 +711,13 @@ trait RequiresApprovalWhenChanges
         return false;
     }
 
+    /**
+     * Hold a save behind a pending Modification.
+     *
+     * @internal
+     * @param  \Illuminate\Database\Eloquent\Model  $item
+     * @return bool  False when the change was held, true when there was nothing to decide.
+     */
     public static function captureSave($item): bool
     {
         if ($item->getKey() === null) {
@@ -690,6 +803,13 @@ trait RequiresApprovalWhenChanges
         $item->setRawAttributes($item->getRawOriginal());
     }
 
+    /**
+     * Prepare the audit row of a direct save, written once the save goes through.
+     *
+     * @internal
+     * @param  \Illuminate\Database\Eloquent\Model  $item
+     * @return bool  Always true: the save goes on.
+     */
     public static function captureModification($item): bool
     {
         $diff = self::buildModificationDiff($item);

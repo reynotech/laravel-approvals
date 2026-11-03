@@ -15,6 +15,13 @@ use ReynoTECH\Approvals\Contracts\GatesCreation;
  */
 class ApprovalDraftScope implements Scope
 {
+    /**
+     * Leave out rows waiting for approval, on a model in draft mode.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $builder
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @return void
+     */
     public function apply(Builder $builder, Model $model): void
     {
         if ($model->approvalCreationMode() === GatesCreation::DRAFT) {
@@ -22,6 +29,12 @@ class ApprovalDraftScope implements Scope
         }
     }
 
+    /**
+     * Add the `withApprovalDrafts()` and `onlyApprovalDrafts()` query methods.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $builder
+     * @return void
+     */
     public function extend(Builder $builder): void
     {
         $builder->macro('withApprovalDrafts', fn (Builder $builder) => $builder->withoutGlobalScope($this));

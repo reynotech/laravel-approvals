@@ -9,22 +9,45 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
 
+/**
+ * One approver's vote for a modification or one of its items.
+ *
+ * @property-read \Illuminate\Database\Eloquent\Model $approver
+ * @property string|null $reason
+ * @property int $modification_id
+ * @property int|null $modification_item_id  Null when the vote is on the whole modification.
+ */
 class Approval extends Model
 {
     protected $table = 'approvals';
 
     protected $guarded = ['id'];
 
+    /**
+     * The model that cast this vote.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
+     */
     public function approver(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /**
+     * The modification this vote belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function modification(): BelongsTo
     {
         return $this->belongsTo(ResolvesApprovalModels::modificationClass());
     }
 
+    /**
+     * The item this vote is on, if it isn't on the whole modification.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function modificationItem(): BelongsTo
     {
         return $this->belongsTo(ResolvesApprovalModels::modificationItemClass());

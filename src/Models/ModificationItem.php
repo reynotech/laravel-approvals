@@ -34,31 +34,62 @@ class ModificationItem extends Model
         ];
     }
 
+    /**
+     * The modification this item is part of.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function modification(): BelongsTo
     {
         return $this->belongsTo(ResolvesApprovalModels::modificationClass(), 'modification_id');
     }
 
+    /**
+     * The approvals cast on this item.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function approvals(): HasMany
     {
         return $this->hasMany(ResolvesApprovalModels::approvalClass(), 'modification_item_id');
     }
 
+    /**
+     * The disapprovals cast on this item.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function disapprovals(): HasMany
     {
         return $this->hasMany(ResolvesApprovalModels::disapprovalClass(), 'modification_item_id');
     }
 
+    /**
+     * Approvals still missing, read as `approvers_remaining`.
+     *
+     * @return int
+     */
     public function getApproversRemainingAttribute(): int
     {
         return $this->approvers_required - $this->approvals()->count();
     }
 
+    /**
+     * Disapprovals still missing, read as `disapprovers_remaining`.
+     *
+     * @return int
+     */
     public function getDisapproversRemainingAttribute(): int
     {
         return $this->disapprovers_required - $this->disapprovals()->count();
     }
 
+    /**
+     * Only the items waiting for a decision.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');

@@ -6,8 +6,16 @@ namespace ReynoTECH\Approvals;
 
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Registers the config and migrations of the package.
+ */
 class ApprovalsServiceProvider extends ServiceProvider
 {
+    /**
+     * Merge the package config under the `approvals` key.
+     *
+     * @return void
+     */
     public function register(): void
     {
         $this->mergeConfigFrom(
@@ -16,6 +24,13 @@ class ApprovalsServiceProvider extends ServiceProvider
         );
     }
 
+    /**
+     * Load the migrations, and offer them and the config for publishing.
+     *
+     * Publish tags: `approvals-config` and `approvals-migrations`.
+     *
+     * @return void
+     */
     public function boot(): void
     {
         $this->publishes(

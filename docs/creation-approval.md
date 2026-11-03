@@ -74,7 +74,8 @@ foreach (Client::pendingCreations() as $request) {
 $request->fresh()->modifiable;   // the new Client
 ```
 
-- `saving` fires on the request and again on approval. `creating`/`created` fire only on approval, and `created_at` is the approval time. `occurred_at` on the `Modification` keeps the request time.
+- `saving` fires on the request and again on approval. `creating`/`created` fire only on approval.
+- `created_at` is the request time, the `occurred_at` of the `Modification`, as in draft mode. A `created_at` you set on the model is kept instead. `updated_at` is the approval time.
 - Requesting the same creation again while one is pending returns that request instead of adding another.
 - A failure on approval, such as a unique index, reaches the caller. The vote is undone and the request stays pending.
 
@@ -103,6 +104,23 @@ $user->approve($request);                     // the row becomes visible
 - Related records aren't deleted with a rejected draft unless your foreign keys or listeners do it.
 - An update to a draft goes through the usual gate and audit, as for any other row.
 - Keep the column out of mass assignment: writing `false` to it reveals the row with no vote. Add it to `$guarded`, or leave it out of `$fillable`.
+
+## Resolving without a vote
+
+When a request no longer needs a decision, for example because the data it was waiting on got fixed, apply it with `forceApprovalUpdate()`:
+
+```php
+foreach (Client::pendingCreations() as $request) {
+    if (Region::whereKey($request->modifications['region_id']['mod'])->exists()) {
+        $request->forceApprovalUpdate();
+    }
+}
+```
+
+- The package watches nothing: your code decides when to call it.
+- It works in both modes and only on pending requests. It records no vote, so keep who or what resolved it yourself if you need that.
+- It returns nothing. If `$request->fresh()->status` is still `pending`, a listener vetoed the write. A database error, such as a unique index, is thrown, and the request stays pending.
+- It writes the values as they were requested. To change one, reject the request and send it again.
 
 ## Changing mode
 

@@ -45,6 +45,14 @@ On a model using `ApprovesChanges`:
 
 All four return `false` when the vote wasn't taken or the change couldn't be applied: the approver isn't authorized, the change was already decided (a rejection is final, send the change again), it's a direct audit row, its model no longer exists (a pending change can still be rejected), or a listener vetoed the save. Each approver holds one vote per decision: voting again keeps the first reason, and a vote can switch sides while the change is undecided.
 
+On a `Modification`:
+
+| Method | Purpose |
+|---|---|
+| `forceApprovalUpdate()` | Apply a pending change or creation with no vote. All or nothing, and returns nothing: check `status` afterwards. |
+| `isPending()` / `isCreation()` | Whether it's waiting for a decision, and whether it requests a new row. |
+| `modifiableWithDrafts()` | The model, including a row hidden while its creation is pending. |
+
 ## Known limitations
 
 - Migrations use `nullableMorphs()`/`morphs()`, which assume integer/bigint primary keys on `modifiable`/`modifier`/`approver`/`disapprover`. UUID/ULID-keyed models are not supported out of the box.

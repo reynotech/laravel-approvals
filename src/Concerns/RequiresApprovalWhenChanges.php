@@ -315,6 +315,7 @@ trait RequiresApprovalWhenChanges
                 $this->setAttribute($this->approvalDraftColumn(), false);
             } else {
                 self::applyLegacyDiff($this, $modification->modifications->toArray());
+                self::dateFromRequest($this, $modification);
             }
 
             if (!$this->saveApprovedChanges()) {
@@ -331,6 +332,19 @@ trait RequiresApprovalWhenChanges
         } else {
             $modification->status = $approved ? Modification::STATUS_APPROVED : Modification::STATUS_REJECTED;
             $modification->save();
+        }
+    }
+
+    /**
+     * The row dates from its request, as a draft's does, not from whenever someone got to it.
+     * A created_at set by hand is already in the diff, and stays.
+     */
+    private static function dateFromRequest($model, Modification $modification): void
+    {
+        $column = $model->usesTimestamps() ? $model->getCreatedAtColumn() : null;
+
+        if ($column && $modification->occurred_at && !$model->isDirty($column)) {
+            $model->setCreatedAt($modification->occurred_at);
         }
     }
 
@@ -1211,7 +1225,7 @@ trait RequiresApprovalWhenChanges
         $modification->approvers_required = $approversRequired;
         $modification->disapprovers_required = $disapproversRequired;
         $modification->md5 = md5(json_encode($diff));
-        $modification->occurred_at = $occurredAt ?? new \DateTimeImmutable();
+        $modification->occurred_at = $occurredAt ?? $item->freshTimestamp();
 
         if ($operationId) {
             $modification->operation_id = $operationId;

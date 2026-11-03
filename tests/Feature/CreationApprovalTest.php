@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges;
 use ReynoTECH\Approvals\Contracts\Approvable;
 use ReynoTECH\Approvals\Contracts\GatesCreation;
@@ -63,6 +64,16 @@ class DeferredNoColumnModel extends Model implements Approvable, GatesCreation
     }
 }
 
+class DeferredNoTimestampsModel extends DeferredCreationModel
+{
+    public $timestamps = false;
+}
+
+class DeferredNoCreatedAtModel extends DeferredCreationModel
+{
+    public const CREATED_AT = null;
+}
+
 class TwoApproverDeferredModel extends DeferredCreationModel
 {
     protected function approversRequired(): int
@@ -106,6 +117,7 @@ final class CreationApprovalTest extends TestCase
     {
         Relation::$morphMap = [];
         ConfiguredCreationModel::$veto = false;
+        Carbon::setTestNow();
         test_set_config('approvals.creation.mode', 'deferred');
 
         parent::tearDown();
@@ -237,6 +249,21 @@ final class CreationApprovalTest extends TestCase
         }
 
         $this->assertSame(0, Approval::count());
+        $this->assertSame('pending', $request->fresh()->status);
+        $this->assertNull($request->fresh()->modifiable_id);
+    }
+
+    public function test_deferred_failure_when_forcing_reaches_the_caller_and_keeps_it_pending(): void
+    {
+        DeferredCreationModel::create(['name' => 'taken', 'code' => 'dup']);
+        $request = DeferredCreationModel::create(['name' => 'ACME', 'status' => 'gated', 'code' => 'dup'])->getLastModification();
+
+        try {
+            $request->fresh()->forceApprovalUpdate();
+            $this->fail('the unique index should refuse this');
+        } catch (QueryException) {
+        }
+
         $this->assertSame('pending', $request->fresh()->status);
         $this->assertNull($request->fresh()->modifiable_id);
     }
@@ -439,6 +466,95 @@ final class CreationApprovalTest extends TestCase
     public static function modes(): array
     {
         return ['deferred' => [DeferredCreationModel::class], 'draft' => [DraftCreationModel::class]];
+    }
+
+    /**
+     * @return array<string, array{class-string<ConfiguredCreationModel>, bool}>
+     */
+    public static function modesAndDecisions(): array
+    {
+        return [
+            'deferred, voted' => [DeferredCreationModel::class, false],
+            'deferred, forced' => [DeferredCreationModel::class, true],
+            'draft, voted' => [DraftCreationModel::class, false],
+            'draft, forced' => [DraftCreationModel::class, true],
+        ];
+    }
+
+    /**
+     * @dataProvider modesAndDecisions
+     */
+    public function test_an_approved_creation_dates_from_its_request(string $class, bool $forced): void
+    {
+        Carbon::setTestNow('2026-01-01 10:00:00');
+        $request = $class::create(['name' => 'ACME', 'status' => 'gated'])->getLastModification();
+
+        Carbon::setTestNow('2026-01-06 15:30:00');
+        $forced ? $request->fresh()->forceApprovalUpdate() : $this->user()->approve($request);
+
+        $row = $class::where('name', 'ACME')->first();
+
+        $this->assertSame('2026-01-01 10:00:00', $row->created_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-01-06 15:30:00', $row->updated_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-01-01 10:00:00', $request->fresh()->occurred_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_a_deferred_creation_keeps_a_created_at_set_by_hand(): void
+    {
+        Carbon::setTestNow('2026-01-01 10:00:00');
+        $model = new DeferredCreationModel(['name' => 'ACME', 'status' => 'gated']);
+        $model->created_at = '2025-06-15 08:00:00';
+        $model->save();
+
+        Carbon::setTestNow('2026-01-06 15:30:00');
+        $this->user()->approve($model->getLastModification());
+
+        $row = DeferredCreationModel::where('name', 'ACME')->first();
+
+        $this->assertSame('2025-06-15 08:00:00', $row->created_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-01-06 15:30:00', $row->updated_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_a_deferred_creation_without_timestamps_stays_without_them(): void
+    {
+        $request = DeferredNoTimestampsModel::create(['name' => 'ACME', 'status' => 'gated'])->getLastModification();
+
+        $this->user()->approve($request);
+
+        $this->assertNull(Capsule::table('regression_models')->where('name', 'ACME')->value('created_at'));
+    }
+
+    public function test_a_deferred_creation_without_a_created_at_column_still_inserts(): void
+    {
+        $request = DeferredNoCreatedAtModel::create(['name' => 'ACME', 'status' => 'gated'])->getLastModification();
+
+        $this->user()->approve($request);
+
+        $row = Capsule::table('regression_models')->where('name', 'ACME')->first();
+
+        $this->assertNull($row->created_at);
+        $this->assertNotNull($row->updated_at);
+    }
+
+    /**
+     * @dataProvider modes
+     */
+    public function test_a_creation_can_be_resolved_with_no_vote(string $class): void
+    {
+        $class::create(['name' => 'ACME', 'status' => 'gated']);
+
+        foreach ($class::pendingCreations() as $request) {
+            $request->forceApprovalUpdate();
+        }
+
+        $request = Modification::sole();
+
+        $this->assertSame('approved', $request->status);
+        $this->assertSame(0, $request->approvals()->count());
+        $this->assertSame('ACME', $request->modifications['name']['mod']);
+        $this->assertSame('ACME', $request->modifiable->name);
+        $this->assertCount(0, $class::pendingCreations());
+        $this->assertSame(1, $class::count());
     }
 
     /**

@@ -10,7 +10,7 @@ title: Changelog
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
-### Unreleased
+### 0.6.0 - 2026-11-03
 - Fixed: one approver could fill several approval slots by voting with different reasons. Each approver now holds one vote per decision, and the first reason is kept.
 - Fixed: a change could be voted on after being decided. Reapproving overwrote newer data, disapproving marked an applied change `rejected`, and approving a direct audit row rolled the model back. All of them now return `false` and change nothing.
 - **Changed:** a rejection is final. Approving a `rejected` change or item no longer applies it; send the change again. A vote can still switch sides while the change is undecided.

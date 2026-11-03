@@ -6,7 +6,7 @@ title: Upgrading
 
 [← Home](index.md)
 
-## Unreleased
+## From < 0.6.0
 
 Resolve pending `Modification` rows before upgrading if they touch an `encrypted` attribute: older rows hold its plain text in `mod`, and approving one now writes that to the column as is. Existing pending rows with ungrouped fields also keep losing them, and votes duplicated by different reasons, or stored under a class name before adding a morph map, still count separately.
 

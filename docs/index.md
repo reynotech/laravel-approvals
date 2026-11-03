@@ -13,6 +13,7 @@ Approval workflows for Eloquent models: capture a pending change as a `Modificat
 - [Getting Started](getting-started.md) — installation and the minimal setup for a gated model and an approver model.
 - [Modification & History](modifications.md) — how `flow`/`status` model history, and the stored diff format.
 - [Partial (Per-Item) Approval](partial-approval.md) — opting a model into independently-decidable field groups via `ModificationItem`.
+- [Creation Approval](creation-approval.md) — holding new models until approved, without a row (`deferred`) or with a hidden one (`draft`).
 - [Recording Manual Events](manual-events.md) — `recordModification()` for history outside of `saving` (attachments, signatures, integrations).
 - [API Reference](api-reference.md) — extension points, config, known limitations.
 - [Upgrading](upgrading.md) — migrating an existing installation to the `flow`/`status`/`ModificationItem` model.

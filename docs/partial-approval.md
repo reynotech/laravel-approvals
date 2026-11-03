@@ -27,7 +27,7 @@ class Report extends Model implements Approvable
 }
 ```
 
-Any dirty key **not** covered by a group stays bundled into the parent `Modification`'s own diff, decided globally as before. Keys covered by a group each get one `ModificationItem` row **per group**, not per field — a group can bundle several fields into a single JSON `original`/`proposed` pair, keeping row counts low.
+Any dirty key **not** covered by a group goes, together with the other uncovered keys, into one more item keyed `ModificationItem::KEY_UNGROUPED` (`_ungrouped`), so `approve()`/`disapprove()` decide them along with the rest. Keys covered by a group each get one `ModificationItem` row **per group**, not per field — a group can bundle several fields into a single JSON `original`/`proposed` pair, keeping row counts low.
 
 ## Deciding items independently
 
@@ -58,4 +58,4 @@ Each decision records author, reason, and timestamp on the `Approval`/`Disapprov
 - Reaching `disapprovers_required` on an item marks it `rejected` without touching the model.
 - After every decision, the parent's `status` is recalculated from its items: `pending` while any item is still pending, `approved` once all are applied/approved, `rejected` once all are rejected, `partially_resolved` for a mix.
 
-Next: [Recording Manual Events](manual-events.md).
+Next: [Creation Approval](creation-approval.md).

@@ -37,6 +37,10 @@
     },
     "scripts": {
         "test": "phpunit",
+        "test:mysql": ["Composer\\Config::disableProcessTimeout", "bin/bench test mysql"],
+        "test:pgsql": ["Composer\\Config::disableProcessTimeout", "bin/bench test pgsql"],
+        "test:stress": ["Composer\\Config::disableProcessTimeout", "bin/bench stress"],
+        "bench": ["Composer\\Config::disableProcessTimeout", "bin/bench"],
         "release:patch": "bin/bump-version.sh patch",
         "release:minor": "bin/bump-version.sh minor",
         "release:major": "bin/bump-version.sh major"

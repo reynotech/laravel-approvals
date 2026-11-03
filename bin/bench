@@ -1,0 +1,265 @@
+#!/usr/bin/env bash
+#
+# The test bench: one entry point for everything a contributor may want to run.
+# Run `bin/bench help` for the list.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT" || exit 1
+
+COMPOSE=(docker compose -f docker-compose.test.yml)
+PHPUNIT=vendor/bin/phpunit
+FAILED=()
+
+usage() {
+    cat <<'EOF'
+bin/bench <command> [options]
+
+  test [engine|all]           The regular suite. Default: sqlite, no setup needed.
+  stress [engine]             Fuzz, matrix and, on a server, concurrency. Default: mysql.
+  fuzz [engine]               Random operations against a model of the expected result.
+                              FUZZ_SEEDS=<n> sets how many sequences (default 100).
+  matrix [engine]             Every cast against every transition, approval vs direct save.
+  concurrency [engine]        Separate processes acting at once. Default: mysql. Not on sqlite.
+                              CONCURRENCY_ROUNDS=<n> sets the repetitions (default 15).
+  mutation [--min=N]          Breaks the code on purpose to measure what the tests catch.
+                              Fails under --min percent (default 90). --workers=N (default 8).
+  compat [versions]           The suite on each Laravel version. Default: 11 12 13.
+  db up|down|status [engine]  The containers, data in memory only (mysql 33071, pgsql 33072).
+  all [--with-mutation]       Everything, with a summary at the end.
+  help                        This list.
+
+Engines: sqlite, mysql, pgsql.
+Extra arguments reach PHPUnit: bin/bench test pgsql --filter=ApprovalWorkflowTest
+EOF
+}
+
+title() {
+    printf '\n\033[1m== %s\033[0m\n' "$1"
+}
+
+# Runs a named step, remembering whether it failed so `all` can report every result.
+step() {
+    local name="$1"
+    shift
+    title "$name"
+
+    if "$@"; then
+        printf '\033[32mok\033[0m  %s\n' "$name"
+    else
+        printf '\033[31mfailed\033[0m  %s\n' "$name"
+        FAILED+=("$name")
+    fi
+}
+
+# The compose service of an engine.
+service_of() {
+    case "$1" in
+        mysql) echo mysql ;;
+        pgsql) echo postgres ;;
+    esac
+}
+
+db_reachable() {
+    local dsn user
+
+    case "$1" in
+        mysql) dsn="mysql:host=127.0.0.1;port=33071;dbname=approvals_test"; user=root ;;
+        pgsql) dsn="pgsql:host=127.0.0.1;port=33072;dbname=approvals_test"; user=postgres ;;
+    esac
+
+    DSN="$dsn" DB_USER="$user" php -r 'try { new PDO(getenv("DSN"), getenv("DB_USER"), "testing"); } catch (Throwable) { exit(1); }' 2>/dev/null
+}
+
+db_up() {
+    local engine="$1"
+
+    if db_reachable "$engine"; then
+        return 0
+    fi
+
+    if ! docker info >/dev/null 2>&1; then
+        echo "$engine needs Docker, and Docker isn't running. Start it and try again." >&2
+        return 1
+    fi
+
+    "${COMPOSE[@]}" up -d --wait "$(service_of "$engine")"
+}
+
+db() {
+    local action="${1:-}" engines=("${2:-mysql}")
+
+    if [ $# -lt 2 ] && [ "$action" != "up" ]; then
+        engines=(mysql pgsql)
+    fi
+
+    case "$action" in
+        up)
+            db_up "${engines[0]}"
+            ;;
+        down)
+            "${COMPOSE[@]}" down
+            ;;
+        status)
+            local engine status=0
+
+            for engine in "${engines[@]}"; do
+                if db_reachable "$engine"; then
+                    echo "$engine is up"
+                else
+                    echo "$engine is down. Run: bin/bench db up $engine"
+                    status=1
+                fi
+            done
+
+            return $status
+            ;;
+        *)
+            echo "Usage: bin/bench db up|down|status [mysql|pgsql]" >&2
+            return 2
+            ;;
+    esac
+}
+
+# phpunit_on <engine> [phpunit args]
+phpunit_on() {
+    local engine="$1"
+    shift
+
+    case "$engine" in
+        sqlite) "$PHPUNIT" "$@" ;;
+        mysql|pgsql) db_up "$engine" && "$PHPUNIT" -c "phpunit.$engine.xml" "$@" ;;
+        *) echo "Unknown engine [$engine]. Use sqlite, mysql or pgsql." >&2; return 2 ;;
+    esac
+}
+
+engine_or() {
+    case "${1:-}" in
+        sqlite|mysql|pgsql) echo "$1" ;;
+        *) echo "$2" ;;
+    esac
+}
+
+compat() {
+    local versions=("$@")
+    [ ${#versions[@]} -eq 0 ] && versions=(11 12 13)
+
+    local version
+    for version in "${versions[@]}"; do
+        step "Laravel $version" compat_one "$version"
+    done
+}
+
+compat_one() {
+    local version="$1" dir status
+    dir="$(mktemp -d)"
+
+    # On a copy, so the repo's own lock file stays as it is.
+    cp -R src tests config database composer.json phpunit.xml.dist "$dir"/
+
+    (
+        cd "$dir" || exit 1
+        composer require --no-interaction --no-progress --no-scripts -W "illuminate/database:^$version.0" "illuminate/support:^$version.0" >/dev/null 2>&1 &&
+            composer require --dev --no-interaction --no-progress --no-scripts -W "illuminate/events:^$version.0" >/dev/null 2>&1 || {
+                echo "Couldn't install Laravel $version on this PHP ($(php -r 'echo PHP_VERSION;'))." >&2
+                exit 1
+            }
+        composer show illuminate/database 2>/dev/null | grep -m1 versions
+        vendor/bin/phpunit --no-progress
+    )
+    status=$?
+
+    rm -rf "$dir"
+
+    return $status
+}
+
+summary() {
+    title "Summary"
+
+    if [ ${#FAILED[@]} -eq 0 ]; then
+        printf '\033[32mEverything passed.\033[0m\n'
+        return 0
+    fi
+
+    printf '\033[31mFailed:\033[0m\n'
+    printf '  - %s\n' "${FAILED[@]}"
+
+    return 1
+}
+
+command="${1:-help}"
+[ $# -gt 0 ] && shift
+
+case "$command" in
+    test)
+        engine="$(engine_or "${1:-}" sqlite)"
+
+        if [ "${1:-}" = "all" ]; then
+            shift
+            step "Suite on SQLite" phpunit_on sqlite "$@"
+            step "Suite on MySQL" phpunit_on mysql "$@"
+            step "Suite on Postgres" phpunit_on pgsql "$@"
+            summary
+        else
+            case "${1:-}" in sqlite|mysql|pgsql) shift ;; esac
+            phpunit_on "$engine" "$@"
+        fi
+        ;;
+    stress)
+        engine="$(engine_or "${1:-}" mysql)"
+        case "${1:-}" in sqlite|mysql|pgsql) shift ;; esac
+        step "Stress on $engine" phpunit_on "$engine" --testsuite stress "$@"
+        summary
+        ;;
+    fuzz)
+        engine="$(engine_or "${1:-}" sqlite)"
+        case "${1:-}" in sqlite|mysql|pgsql) shift ;; esac
+        phpunit_on "$engine" --testsuite stress --filter StatefulFuzzTest "$@"
+        ;;
+    matrix)
+        engine="$(engine_or "${1:-}" sqlite)"
+        case "${1:-}" in sqlite|mysql|pgsql) shift ;; esac
+        phpunit_on "$engine" --testsuite stress --filter DiffMatrixTest "$@"
+        ;;
+    concurrency)
+        engine="$(engine_or "${1:-}" mysql)"
+        case "${1:-}" in sqlite|mysql|pgsql) shift ;; esac
+        phpunit_on "$engine" --testsuite stress --filter ConcurrencyTest "$@"
+        ;;
+    mutation)
+        php bin/mutation.php "$@"
+        ;;
+    compat)
+        compat "$@"
+        summary
+        ;;
+    db)
+        db "$@"
+        ;;
+    all)
+        with_mutation=false
+        [ "${1:-}" = "--with-mutation" ] && with_mutation=true
+
+        step "Suite on SQLite" phpunit_on sqlite --no-progress
+        step "Suite on MySQL" phpunit_on mysql --no-progress
+        step "Suite on Postgres" phpunit_on pgsql --no-progress
+        step "Matrix on SQLite" phpunit_on sqlite --no-progress --testsuite stress --filter DiffMatrixTest
+        step "Matrix on MySQL" phpunit_on mysql --no-progress --testsuite stress --filter DiffMatrixTest
+        step "Matrix on Postgres" phpunit_on pgsql --no-progress --testsuite stress --filter DiffMatrixTest
+        step "Fuzz on SQLite" phpunit_on sqlite --no-progress --testsuite stress --filter StatefulFuzzTest
+        step "Concurrency on MySQL" phpunit_on mysql --no-progress --testsuite stress --filter ConcurrencyTest
+        step "Concurrency on Postgres" phpunit_on pgsql --no-progress --testsuite stress --filter ConcurrencyTest
+        compat
+        $with_mutation && step "Mutation" php bin/mutation.php
+        summary
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        echo "Unknown command [$command]." >&2
+        usage >&2
+        exit 2
+        ;;
+esac

@@ -1,0 +1,36 @@
+# Databases for the test suite only. Data lives in memory and is gone when a container stops.
+# Managed by `bin/bench db up|down|status`.
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: laravel-approvals-mysql
+    command: --innodb-flush-log-at-trx-commit=0 --skip-log-bin --max-connections=300
+    environment:
+      MYSQL_ROOT_PASSWORD: testing
+      MYSQL_DATABASE: approvals_test
+    ports:
+      - "127.0.0.1:33071:3306"
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-ptesting", "--silent"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+
+  postgres:
+    image: postgres:17
+    container_name: laravel-approvals-postgres
+    command: postgres -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=300
+    environment:
+      POSTGRES_PASSWORD: testing
+      POSTGRES_DB: approvals_test
+    ports:
+      - "127.0.0.1:33072:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "approvals_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 60

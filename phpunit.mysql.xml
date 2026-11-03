@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    bootstrap="tests/bootstrap.php"
+    defaultTestSuite="default"
+    colors="true"
+    failOnRisky="true"
+    failOnWarning="true"
+    displayDetailsOnTestsThatTriggerDeprecations="true"
+    displayDetailsOnTestsThatTriggerNotices="true"
+    displayDetailsOnTestsThatTriggerWarnings="true"
+    displayDetailsOnTestsThatTriggerErrors="true"
+    displayDetailsOnSkippedTests="true"
+>
+    <php>
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="33071"/>
+        <env name="DB_DATABASE" value="approvals_test"/>
+        <env name="DB_USERNAME" value="root"/>
+        <env name="DB_PASSWORD" value="testing"/>
+    </php>
+    <testsuites>
+        <testsuite name="default">
+            <directory>tests/Unit</directory>
+            <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="stress">
+            <directory>tests/Stress</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

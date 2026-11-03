@@ -26,6 +26,7 @@ bin/bench <command> [options]
                               Fails under --min percent (default 90). --workers=N (default 8).
   compat [versions]           The suite on each Laravel version. Default: 11 12 13.
   db up|down|status [engine]  The containers, data in memory only (mysql 33071, pgsql 33072).
+  api-docs                    Builds the class reference in docs/api. Needs network the first time.
   all [--with-mutation]       Everything, with a summary at the end.
   help                        This list.
 
@@ -84,6 +85,31 @@ db_up() {
     fi
 
     "${COMPOSE[@]}" up -d --wait "$(service_of "$engine")"
+}
+
+# Doctum ships as a phar, since installing it with Composer would tie it to our dependencies.
+DOCTUM_VERSION=5.6.0
+DOCTUM_SHA256=bd9fee08e7672ffdafae294cb064c71b3f6582992a5f87ac9ac9b2bcd44a5fce
+
+api_docs() {
+    local phar="build/doctum/doctum-$DOCTUM_VERSION.phar"
+
+    if [ ! -f "$phar" ]; then
+        mkdir -p build/doctum
+        curl -fsSL -o "$phar.tmp" "https://doctum.long-term.support/releases/$DOCTUM_VERSION/doctum.phar" || return 1
+
+        if [ "$(shasum -a 256 "$phar.tmp" | cut -d' ' -f1)" != "$DOCTUM_SHA256" ]; then
+            rm -f "$phar.tmp"
+            echo "The Doctum download doesn't match its checksum." >&2
+            return 1
+        fi
+
+        mv "$phar.tmp" "$phar"
+    fi
+
+    # From scratch, so a class removed from src doesn't stay in the reference.
+    rm -rf docs/api build/doctum/cache
+    php "$phar" update doctum.php "$@"
 }
 
 db() {
@@ -253,6 +279,9 @@ case "$command" in
         compat
         $with_mutation && step "Mutation" php bin/mutation.php
         summary
+        ;;
+    api-docs)
+        api_docs "$@"
         ;;
     help|-h|--help)
         usage

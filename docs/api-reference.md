@@ -6,6 +6,8 @@ title: API Reference
 
 [← Home](index.md)
 
+This page covers how to use the package. For the signature of every class and method, see the [Class Reference](api/index.html).
+
 ## Extension points
 
 - `modifier()` — override to change how the "who made this change" resolver works (defaults to `auth()->user()`).

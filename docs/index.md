@@ -16,6 +16,7 @@ Approval workflows for Eloquent models: capture a pending change as a `Modificat
 - [Creation Approval](creation-approval.md) — holding new models until approved, without a row (`deferred`) or with a hidden one (`draft`).
 - [Recording Manual Events](manual-events.md) — `recordModification()` for history outside of `saving` (attachments, signatures, integrations).
 - [API Reference](api-reference.md) — extension points, config, known limitations.
+- [Class Reference](api/index.html) — every class and method, generated from the source.
 - [Upgrading](upgrading.md) — migrating an existing installation to the `flow`/`status`/`ModificationItem` model.
 - [Changelog](changelog.md)
 

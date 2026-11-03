@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="index, follow, all" />
+    <title>ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges | Laravel Approvals API</title>
+
+            <link rel="stylesheet" type="text/css" href="../../../css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="../../../css/bootstrap-theme.min.css">
+        <link rel="stylesheet" type="text/css" href="../../../css/doctum.css">
+        <link rel="stylesheet" type="text/css" href="../../../fonts/doctum-font.css">
+        <script src="../../../js/jquery-3.5.1.slim.min.js"></script>
+        <script async defer src="../../../doctum.js"></script>
+        <script async defer src="../../../js/bootstrap.min.js"></script>
+        <script async defer src="../../../js/autocomplete.min.js"></script>
+        <meta name="MobileOptimized" content="width">
+        <meta name="HandheldFriendly" content="true">
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+
+        <link rel="search"
+          type="application/opensearchdescription+xml"
+          href="https://reynotech.github.io/laravel-approvals/api/opensearch.xml"
+          title="Laravel Approvals API (main)" />
+    </head>
+
+    <body id="class" data-name="class:ReynoTECH_Approvals_Concerns_RequiresApprovalWhenChanges" data-root-path="../../../" data-search-index-url="../../../doctum-search.json">
+            <div id="content">
+        <div id="left-column">
+                <div id="control-panel">
+                <div class="search-bar hidden" id="search-progress-bar-container">
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" id="search-progress-bar"
+                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+            </div>
+        </div>
+        <form id="search-form" action="../../../search.html">
+            <span class="icon icon-search"></span>
+            <input name="search"
+                   id="doctum-search-auto-complete"
+                   class="typeahead form-control"
+                   type="search"
+                   placeholder="Search"
+                   spellcheck="false"
+                   autocorrect="off"
+                   autocomplete="off"
+                   autocapitalize="off">
+            <div class="auto-complete-results" id="auto-complete-results"></div>
+        </form>
+    </div>
+
+                <div id="api-tree"></div>
+
+        </div>
+        <div id="right-column">
+                <nav id="site-nav" class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-elements">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="../../../index.html">Laravel Approvals API</a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar-elements">
+                <ul class="nav navbar-nav">
+                    <li><a href="../../../classes.html">Classes</a></li>
+                    <li><a href="../../../namespaces.html">Namespaces</a></li>
+                    <li><a href="../../../interfaces.html">Interfaces</a></li>
+                    <li><a href="../../../traits.html">Traits</a></li>
+                    <li><a href="../../../doc-index.html">Index</a></li>
+                    <li><a href="../../../search.html">Search</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+                        <div class="namespace-breadcrumbs">
+            <ol class="breadcrumb">
+                <li><span class="label label-default">trait</span></li>
+                        <li><a href="../../../ReynoTECH.html">ReynoTECH</a></li><li class="backslash">\</li><li><a href="../../../ReynoTECH/Approvals.html">Approvals</a></li><li class="backslash">\</li><li><a href="../../../ReynoTECH/Approvals/Concerns.html">Concerns</a></li><li class="backslash">\</li><li>RequiresApprovalWhenChanges</li>
+            </ol>
+        </div>
+                <div id="page-content">
+    <div class="page-header">
+        <h1>RequiresApprovalWhenChanges    
+            </h1>
+    </div>
+
+    
+    <p>        trait
+    <strong>RequiresApprovalWhenChanges</strong>        (<a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php">View source</a>)
+</p>
+
+        
+        
+    
+        
+
+            <div class="description">
+            <p><p>Applied to the model whose changes should go through an approval workflow.</p></p>            <p><p>On <code>saving</code>, an update is either captured as a pending Modification (when
+requiresApprovalWhen()/requiresApproval() says so), recorded as a full
+audit Modification row (the default), or saved as-is.</p>
+<p>A pending Modification is decided as a whole by approve()/disapprove()
+unless the model opts into per-group decisions by overriding
+approvableItemGroups(): in that case each group becomes a ModificationItem
+that can be approved/rejected independently via approveItem()/disapproveItem().</p></p>        </div>
+            
+        
+    
+            <h2>Properties</h2>
+
+            <table class="table table-condensed">
+                    <tr>
+                <td class="type" id="property_approversRequired">
+                                        protected                                        int
+                                                                                
+                                    </td>
+                <td>$approversRequired</td>
+                <td class="last"><p>Approvers needed to approve a change. To use another value, override approversRequired().</p></td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td class="type" id="property_disapproversRequired">
+                                        protected                                        int
+                                                                                
+                                    </td>
+                <td>$disapproversRequired</td>
+                <td class="last"><p>Disapprovers needed to reject a change. To use another value, override disapproversRequired().</p></td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td class="type" id="property_updateWhenApproved">
+                                        protected                                        bool
+                                                                                
+                                    </td>
+                <td>$updateWhenApproved</td>
+                <td class="last"><p>Whether approving writes the change to the model, or only marks it as approved.</p></td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td class="type" id="property_deleteWhenDisapproved">
+                                        protected                                        bool
+                                                                                
+                                    </td>
+                <td>$deleteWhenDisapproved</td>
+                <td class="last"><p>Whether rejecting deletes the Modification instead of marking it as rejected.</p></td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td class="type" id="property_deleteWhenApproved">
+                                        protected                                        bool
+                                                                                
+                                    </td>
+                <td>$deleteWhenApproved</td>
+                <td class="last"><p>Whether approving deletes the Modification instead of marking it as approved.</p></td>
+                <td></td>
+            </tr>
+            </table>
+
+    
+            <h2>Methods</h2>
+
+            <div class="container-fluid underlined">
+                    <div class="row">
+                <div class="col-md-2 type">
+                    static&nbsp;void
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_bootRequiresApprovalWhenChanges">bootRequiresApprovalWhenChanges</a>()
+        
+                                            <p><p>Register the model events that hold and audit saves.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    int
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_approversRequired">approversRequired</a>()
+        
+                                            <p><p>Approvers needed to apply a change. Override it to raise the number: the trait's property
+can't be redeclared with another default on the class using the trait (PHP fatal error).</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    int
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_disapproversRequired">disapproversRequired</a>()
+        
+                                            <p><p>Disapprovers needed to reject a change. See approversRequired().</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    string
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_approvalCreationMode">approvalCreationMode</a>()
+        
+                                            <p><p>How a model implementing GatesCreation holds a creation until it's approved.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    string
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_approvalDraftColumn">approvalDraftColumn</a>()
+        
+                                            <p><p>The boolean column marking a row as waiting for approval in draft mode.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    bool
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_requiresApprovalWhen">requiresApprovalWhen</a>(array $modifications)
+        
+                                            <p><p>Rule that decides when an approval process should be triggered for
+this model. Override directly, or define a <code>requiresApprovalWhenTrait</code>
+method to keep this concern free for other traits to compose.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    array
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_approvableItemGroups">approvableItemGroups</a>(array $dirtyKeys)
+        
+                                            <p><p>Opt-in: return the field groups that should be decided independently
+of one another, e.g. ['rules' =&gt; ['rules'], 'notes' =&gt; ['notes']].</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <abbr title="Illuminate\Database\Eloquent\Relations\MorphMany">MorphMany</abbr>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_modifications">modifications</a>()
+        
+                                            <p><p>The modifications recorded for this model.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    static&nbsp;<abbr title="Illuminate\Database\Eloquent\Collection&lt;int, \ReynoTECH\Approvals\Models\Modification&gt;">Modification&gt;</abbr>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_creations">creations</a>()
+        
+                                            <p><p>Every creation recorded for this model, decided or not.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    static&nbsp;
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_pendingCreations">pendingCreations</a>()
+        
+                                            <p><p>Creations of this model still waiting for a decision. In deferred mode this is the only way
+to reach them, since there's no model yet to ask for its modifications().</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_modifier">modifier</a>()
+        
+                                            <p><p>Returns the model that should be recorded as the author of the change.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    void
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_applyModificationChanges">applyModificationChanges</a>(<a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a> $modification, bool $approved)
+        
+                                            <p><p>Carry out a decision on a modification. Votes call this once they reach the required count.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    void
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_applyModificationItemChanges">applyModificationItemChanges</a>(<a href="../../../ReynoTECH/Approvals/Models/ModificationItem.html"><abbr title="ReynoTECH\Approvals\Models\ModificationItem">ModificationItem</abbr></a> $item, bool $approved)
+        
+                                            <p><p>Applies (or rejects) a single ModificationItem's proposed values,
+touching only the fields captured in that item.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    bool
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_isForcedApprovalUpdate">isForcedApprovalUpdate</a>()
+        
+                                            <p><p>Whether the next save skips the approval gate.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    bool
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_setForcedApprovalUpdate">setForcedApprovalUpdate</a>(bool $forced = true)
+        
+                                            <p><p>Make the next save skip the approval gate. It covers that save only.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_requiresApproval">requiresApproval</a>(callable $callback)
+        
+                                            <p><p>Gate this instance with a callback on every later save.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_noSaveModifications">noSaveModifications</a>()
+        
+                                            <p><p>Stop recording audit rows for this instance's direct saves.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_withModificationMeta">withModificationMeta</a>(mixed $meta)
+        
+                                            <p><p>Attach <code>meta</code> to the next Modification this instance produces.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_withFullSaveModification">withFullSaveModification</a>()
+        
+                                            <p><p>Record the full attribute set instead of only the changed attributes.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_withFullSaveOnlyUpdateModification">withFullSaveOnlyUpdateModification</a>()
+        
+                                            <p><p>Record the full attribute set, but only when an attribute changed.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_forceModification">forceModification</a>()
+        
+                                            <p><p>Make the next save produce a Modification even if nothing changed, to record or decide something
+outside the columns: an applied audit row, or a pending request if the gate holds the save.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_withOperationId">withOperationId</a>(string|null $operationId)
+        
+                                            <p><p>Tag the next Modifications of this instance with a shared operation id.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    string|null
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_currentOperationId">currentOperationId</a>()
+        
+                                            <p><p>The operation id set with withOperationId().</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>|null
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_getLastModification">getLastModification</a>()
+        
+                                            <p><p>The last Modification this instance created or matched.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_setLastModification">setLastModification</a>(<a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>|null $mod)
+        
+                                            <p><p>Set what getLastModification() returns.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    <a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_recordModification">recordModification</a>(string $eventType, array $items = [], array|null $context = null, string|null $operationId = null, <a target="_blank" rel="noopener" href="https://www.php.net/DateTimeInterface">DateTimeInterface</a>|null $occurredAt = null)
+        
+                                            <p><p>Explicit history API for events that don't go through <code>saving</code>
+(creation, deletion, attachments, signatures, external integrations).</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    static&nbsp;bool
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_captureSave">captureSave</a>(<abbr title="Illuminate\Database\Eloquent\Model">Model</abbr> $item)
+        
+                                            <p><p>Hold a save behind a pending Modification.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+                    <div class="row">
+                <div class="col-md-2 type">
+                    static&nbsp;bool
+                </div>
+                <div class="col-md-8">
+                    <a href="#method_captureModification">captureModification</a>(<abbr title="Illuminate\Database\Eloquent\Model">Model</abbr> $item)
+        
+                                            <p><p>Prepare the audit row of a direct save, written once the save goes through.</p></p>                </div>
+                <div class="col-md-2"></div>
+            </div>
+            </div>
+
+
+        <h2>Details</h2>
+
+            <div id="method-details">
+                    <div class="method-item">
+                    <h3 id="method_bootRequiresApprovalWhenChanges">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L87">at line 87</a></div>
+        <code>        static            void
+    <strong>bootRequiresApprovalWhenChanges</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+                            <table>
+            <tr>
+                <td><span class="label label-warning">internal</span></td>
+                <td>&nbsp; </td>
+            </tr>
+        </table>
+                &nbsp;
+    
+
+        <div class="method-description">
+                            <p><p>Register the model events that hold and audit saves.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>void</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_approversRequired">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L198">at line 198</a></div>
+        <code>            protected        int
+    <strong>approversRequired</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Approvers needed to apply a change. Override it to raise the number: the trait's property
+can't be redeclared with another default on the class using the trait (PHP fatal error).</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>int</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_disapproversRequired">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L206">at line 206</a></div>
+        <code>            protected        int
+    <strong>disapproversRequired</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Disapprovers needed to reject a change. See approversRequired().</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>int</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_approvalCreationMode">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L216">at line 216</a></div>
+        <code>                    string
+    <strong>approvalCreationMode</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>How a model implementing GatesCreation holds a creation until it's approved.</p></p>                <p><p>Override it to choose per model. Pending rows keep working if this changes, but
+a model leaving draft mode stops hiding its rows, so approve those first.</p></p>        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>string</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_approvalDraftColumn">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L224">at line 224</a></div>
+        <code>                    string
+    <strong>approvalDraftColumn</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>The boolean column marking a row as waiting for approval in draft mode.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>string</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_requiresApprovalWhen">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L234">at line 234</a></div>
+        <code>            protected        bool
+    <strong>requiresApprovalWhen</strong>(array $modifications)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Rule that decides when an approval process should be triggered for
+this model. Override directly, or define a <code>requiresApprovalWhenTrait</code>
+method to keep this concern free for other traits to compose.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>array</td>
+                <td>$modifications</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>bool</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_approvableItemGroups">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L249">at line 249</a></div>
+        <code>            protected        array
+    <strong>approvableItemGroups</strong>(array $dirtyKeys)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Opt-in: return the field groups that should be decided independently
+of one another, e.g. ['rules' =&gt; ['rules'], 'notes' =&gt; ['notes']].</p></p>                <p><p>Changed keys not covered by any group stay together as a single decision
+in one more item, keyed ModificationItem::KEY_UNGROUPED.</p></p>        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>array</td>
+                <td>$dirtyKeys</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>array</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_modifications">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L261">at line 261</a></div>
+        <code>                    <abbr title="Illuminate\Database\Eloquent\Relations\MorphMany">MorphMany</abbr>
+    <strong>modifications</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>The modifications recorded for this model.</p></p>                <p><p>Read on the connection of the Modification, which may not be the one of this model.</p></p>        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><abbr title="Illuminate\Database\Eloquent\Relations\MorphMany">MorphMany</abbr></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_creations">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L283">at line 283</a></div>
+        <code>        static            <abbr title="Illuminate\Database\Eloquent\Collection&lt;int, \ReynoTECH\Approvals\Models\Modification&gt;">Modification&gt;</abbr>
+    <strong>creations</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Every creation recorded for this model, decided or not.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><abbr title="Illuminate\Database\Eloquent\Collection&lt;int, \ReynoTECH\Approvals\Models\Modification&gt;">Modification&gt;</abbr></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_pendingCreations">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L294">at line 294</a></div>
+        <code>        static            
+    <strong>pendingCreations</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Creations of this model still waiting for a decision. In deferred mode this is the only way
+to reach them, since there's no model yet to ask for its modifications().</p></p>                        
+        </div>
+        <div class="tags">
+            
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_modifier">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L309">at line 309</a></div>
+        <code>            protected        
+    <strong>modifier</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Returns the model that should be recorded as the author of the change.</p></p>                <p><p>Override this to plug in your app's auth resolution.</p></p>        
+        </div>
+        <div class="tags">
+            
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_applyModificationChanges">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L323">at line 323</a></div>
+        <code>                    void
+    <strong>applyModificationChanges</strong>(<a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a> $modification, bool $approved)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Carry out a decision on a modification. Votes call this once they reach the required count.</p></p>                <p><p>If a listener vetoes the save, the modification stays pending.</p></p>        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a></td>
+                <td>$modification</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>bool</td>
+                <td>$approved</td>
+                <td><p>True to apply the change, false to reject it.</p></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>void</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_applyModificationItemChanges">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L409">at line 409</a></div>
+        <code>                    void
+    <strong>applyModificationItemChanges</strong>(<a href="../../../ReynoTECH/Approvals/Models/ModificationItem.html"><abbr title="ReynoTECH\Approvals\Models\ModificationItem">ModificationItem</abbr></a> $item, bool $approved)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Applies (or rejects) a single ModificationItem's proposed values,
+touching only the fields captured in that item.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><a href="../../../ReynoTECH/Approvals/Models/ModificationItem.html"><abbr title="ReynoTECH\Approvals\Models\ModificationItem">ModificationItem</abbr></a></td>
+                <td>$item</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>bool</td>
+                <td>$approved</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>void</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_isForcedApprovalUpdate">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L460">at line 460</a></div>
+        <code>                    bool
+    <strong>isForcedApprovalUpdate</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Whether the next save skips the approval gate.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>bool</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_setForcedApprovalUpdate">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L471">at line 471</a></div>
+        <code>                    bool
+    <strong>setForcedApprovalUpdate</strong>(bool $forced = true)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Make the next save skip the approval gate. It covers that save only.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>bool</td>
+                <td>$forced</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>bool</td>
+            <td><p>The value just set.</p></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_requiresApproval">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L482">at line 482</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>requiresApproval</strong>(callable $callback)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Gate this instance with a callback on every later save.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>callable</td>
+                <td>$callback</td>
+                <td><p>Receives the dirty attributes. Return true to hold the save.</p></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_noSaveModifications">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L495">at line 495</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>noSaveModifications</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Stop recording audit rows for this instance's direct saves.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_withModificationMeta">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L508">at line 508</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>withModificationMeta</strong>(mixed $meta)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Attach <code>meta</code> to the next Modification this instance produces.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>mixed</td>
+                <td>$meta</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_withFullSaveModification">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L520">at line 520</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>withFullSaveModification</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Record the full attribute set instead of only the changed attributes.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_withFullSaveOnlyUpdateModification">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L532">at line 532</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>withFullSaveOnlyUpdateModification</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Record the full attribute set, but only when an attribute changed.</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_forceModification">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L547">at line 547</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>forceModification</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Make the next save produce a Modification even if nothing changed, to record or decide something
+outside the columns: an applied audit row, or a pending request if the gate holds the save.</p></p>                <p><p>Every empty diff matches, so a second request while one is pending returns that one and drops its meta.</p></p>        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_withOperationId">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L560">at line 560</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>withOperationId</strong>(string|null $operationId)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Tag the next Modifications of this instance with a shared operation id.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>string|null</td>
+                <td>$operationId</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_currentOperationId">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L572">at line 572</a></div>
+        <code>                    string|null
+    <strong>currentOperationId</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>The operation id set with withOperationId().</p></p>                        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>string|null</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_getLastModification">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L584">at line 584</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>|null
+    <strong>getLastModification</strong>()
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>The last Modification this instance created or matched.</p></p>                <p><p>A save that creates none leaves it as it was.</p></p>        
+        </div>
+        <div class="tags">
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>|null</td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_setLastModification">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L595">at line 595</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a>
+    <strong>setLastModification</strong>(<a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>|null $mod)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Set what getLastModification() returns.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>|null</td>
+                <td>$mod</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Concerns/RequiresApprovalWhenChanges.html"><abbr title="ReynoTECH\Approvals\Concerns\RequiresApprovalWhenChanges">RequiresApprovalWhenChanges</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_recordModification">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L610">at line 610</a></div>
+        <code>                    <a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a>
+    <strong>recordModification</strong>(string $eventType, array $items = [], array|null $context = null, string|null $operationId = null, <a target="_blank" rel="noopener" href="https://www.php.net/DateTimeInterface">DateTimeInterface</a>|null $occurredAt = null)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+            
+
+        <div class="method-description">
+                            <p><p>Explicit history API for events that don't go through <code>saving</code>
+(creation, deletion, attachments, signatures, external integrations).</p></p>                <p><p>Always recorded as an applied, direct Modification: it documents
+something that already happened, it does not gate anything.</p>
+<p>$items entries look like: ['key' =&gt; 'attachments.contract', 'original' =&gt; null, 'proposed' =&gt; [...]].</p></p>        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td>string</td>
+                <td>$eventType</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>array</td>
+                <td>$items</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>array|null</td>
+                <td>$context</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td>string|null</td>
+                <td>$operationId</td>
+                <td></td>
+            </tr>
+                    <tr>
+                <td><a target="_blank" rel="noopener" href="https://www.php.net/DateTimeInterface">DateTimeInterface</a>|null</td>
+                <td>$occurredAt</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td><a href="../../../ReynoTECH/Approvals/Models/Modification.html"><abbr title="ReynoTECH\Approvals\Models\Modification">Modification</abbr></a></td>
+            <td></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_captureSave">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L721">at line 721</a></div>
+        <code>        static            bool
+    <strong>captureSave</strong>(<abbr title="Illuminate\Database\Eloquent\Model">Model</abbr> $item)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+                            <table>
+            <tr>
+                <td><span class="label label-warning">internal</span></td>
+                <td>&nbsp; </td>
+            </tr>
+        </table>
+                &nbsp;
+    
+
+        <div class="method-description">
+                            <p><p>Hold a save behind a pending Modification.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><abbr title="Illuminate\Database\Eloquent\Model">Model</abbr></td>
+                <td>$item</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>bool</td>
+            <td><p>False when the change was held, true when there was nothing to decide.</p></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+                    <div class="method-item">
+                    <h3 id="method_captureModification">
+        <div class="location"><a href="https://github.com/reynotech/laravel-approvals/blob/main/src/Concerns/RequiresApprovalWhenChanges.php#L813">at line 813</a></div>
+        <code>        static            bool
+    <strong>captureModification</strong>(<abbr title="Illuminate\Database\Eloquent\Model">Model</abbr> $item)
+        </code>
+    </h3>
+    <div class="details">    
+            
+    
+                            <table>
+            <tr>
+                <td><span class="label label-warning">internal</span></td>
+                <td>&nbsp; </td>
+            </tr>
+        </table>
+                &nbsp;
+    
+
+        <div class="method-description">
+                            <p><p>Prepare the audit row of a direct save, written once the save goes through.</p></p>                        
+        </div>
+        <div class="tags">
+                            <h4>Parameters</h4>
+
+                    <table class="table table-condensed">
+                    <tr>
+                <td><abbr title="Illuminate\Database\Eloquent\Model">Model</abbr></td>
+                <td>$item</td>
+                <td></td>
+            </tr>
+            </table>
+
+            
+                            <h4>Return Value</h4>
+
+                    <table class="table table-condensed">
+        <tr>
+            <td>bool</td>
+            <td><p>Always true: the save goes on.</p></td>
+        </tr>
+    </table>
+
+            
+            
+            
+                    </div>
+    </div>
+
+            </div>
+            </div>
+
+    
+</div><div id="footer">
+        Generated by <a href="https://github.com/code-lts/doctum">Doctum, a API Documentation generator and fork of Sami</a>.</div></div>
+    </div>
+    </body>
+
+</html>

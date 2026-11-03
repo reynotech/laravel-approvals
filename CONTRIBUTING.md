@@ -37,6 +37,7 @@ bin/bench stress
 | `bin/bench stress [mysql\|pgsql]` | All three above on one server. Default: MySQL. | Docker | About 7 min |
 | `bin/bench compat` | Does it pass on Laravel 11, 12 and 13? | Network | A few minutes |
 | `bin/bench mutation` | Would the tests notice if this code broke? | Nothing | A few minutes |
+| `bin/bench api-docs` | Rebuilds the class reference in `docs/api` from the docblocks. Commit the result. Add `-v` to list docblock problems. | Network the first time | Seconds |
 | `bin/bench all` | Everything but mutation, on every engine, with a summary. Add `--with-mutation` to include it. | Docker, network | About 20 min |
 
 The same commands are available as `composer bench <command>`, with `composer test`, `composer test:mysql`, `composer test:pgsql` and `composer test:stress` as shortcuts.

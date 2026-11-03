@@ -4,6 +4,8 @@ Approval workflows for Eloquent models: capture a pending change as a `Modificat
 
 📖 Full documentation: **https://reynotech.github.io/laravel-approvals/**
 
+🔎 Class reference: **https://reynotech.github.io/laravel-approvals/api/**
+
 ### Requirements
 - PHP 8.2+
 - `illuminate/database` / `illuminate/support` ^11 || ^12 || ^13 (Laravel 13 requires PHP 8.3+)

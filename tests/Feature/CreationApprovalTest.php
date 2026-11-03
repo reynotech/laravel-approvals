@@ -560,6 +560,21 @@ final class CreationApprovalTest extends TestCase
     /**
      * @dataProvider modes
      */
+    public function test_resolving_a_creation_with_no_vote_stays_pending_if_a_saving_listener_vetoes(string $class): void
+    {
+        $request = $class::create(['name' => 'ACME', 'status' => 'gated'])->getLastModification();
+
+        // A draft's row is already in, so this is what can stop the save revealing it.
+        $class::saving(fn () => false);
+        $request->fresh()->forceApprovalUpdate();
+
+        $this->assertSame('pending', $request->fresh()->status);
+        $this->assertSame(0, $class::count());
+    }
+
+    /**
+     * @dataProvider modes
+     */
     public function test_creations_the_gate_doesnt_catch_save_normally(string $class): void
     {
         $model = $class::create(['name' => 'ACME', 'status' => 'open']);

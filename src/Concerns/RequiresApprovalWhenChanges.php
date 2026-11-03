@@ -69,45 +69,9 @@ trait RequiresApprovalWhenChanges
             static::addGlobalScope(new ApprovalDraftScope());
         }
 
-        static::saving(function ($item) {
-            // Anything still here is from an attempt that never finished. A failed draft insert also
-            // left its mark on the row, which a retry the gate lets through must not inherit.
-            if ($item->pendingAudit && !$item->exists && $item instanceof GatesCreation) {
-                unset($item->attributes[$item->approvalDraftColumn()]);
-            }
-
-            $item->pendingAudit = null;
-
-            // A forced update covers this save only, whichever path it takes below.
-            $forced = $item->isForcedApprovalUpdate();
-            $item->setForcedApprovalUpdate(false);
-
-            if (!$item->exists) {
-                if (!$forced && $item instanceof GatesCreation && $item->requiresApprovalOnCreate($item->getDirty()) === true) {
-                    return self::captureCreation($item);
-                }
-
-                return true;
-            }
-
-            return self::withSettledOriginal($item, function () use ($item, $forced) {
-                if (!$forced) {
-                    if ($item->modelApproval && call_user_func_array($item->modelApprovalFn, [$item->getDirty()]) === true) {
-                        return self::captureSave($item);
-                    }
-
-                    if ($item->requiresApprovalWhen($item->getDirty()) === true) {
-                        return self::captureSave($item);
-                    }
-                }
-
-                if ($item->saveModifications) {
-                    return self::captureModification($item);
-                }
-
-                return true;
-            });
-        });
+        // Null, not true, when the save may go on: Eloquent stops at the first listener answering
+        // anything, so true would silently skip every `saving` listener registered after this one.
+        static::saving(fn ($item) => self::gateSave($item) ? null : false);
 
         // Written once the save went through: a veto or a database error must not leave an `applied`
         // row for a change that never happened.
@@ -117,6 +81,47 @@ trait RequiresApprovalWhenChanges
         // over and lose it, leaving a draft nobody can decide.
         static::created(fn ($item) => self::settleWrite($item));
         static::updated(fn ($item) => self::settleWrite($item));
+    }
+
+    private static function gateSave($item): bool
+    {
+        // Anything still here is from an attempt that never finished. A failed draft insert also
+        // left its mark on the row, which a retry the gate lets through must not inherit.
+        if ($item->pendingAudit && !$item->exists && $item instanceof GatesCreation) {
+            unset($item->attributes[$item->approvalDraftColumn()]);
+        }
+
+        $item->pendingAudit = null;
+
+        // A forced update covers this save only, whichever path it takes below.
+        $forced = $item->isForcedApprovalUpdate();
+        $item->setForcedApprovalUpdate(false);
+
+        if (!$item->exists) {
+            if (!$forced && $item instanceof GatesCreation && $item->requiresApprovalOnCreate($item->getDirty()) === true) {
+                return self::captureCreation($item);
+            }
+
+            return true;
+        }
+
+        return self::withSettledOriginal($item, function () use ($item, $forced) {
+            if (!$forced) {
+                if ($item->modelApproval && call_user_func_array($item->modelApprovalFn, [$item->getDirty()]) === true) {
+                    return self::captureSave($item);
+                }
+
+                if ($item->requiresApprovalWhen($item->getDirty()) === true) {
+                    return self::captureSave($item);
+                }
+            }
+
+            if ($item->saveModifications) {
+                return self::captureModification($item);
+            }
+
+            return true;
+        });
     }
 
     private static function settleWrite($item): void

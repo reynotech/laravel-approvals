@@ -63,7 +63,7 @@ On a `Modification`:
 - A non-finite float (`INF`, `NAN`) can't be stored in the JSON diff, and a save holding one throws.
 - `down()` of the first migration drops the tables, even if they existed before it ran.
 - Votes and modifications soft deleted before adopting this package, in tables with a `deleted_at` column, still count.
-- `saving` listeners run again on approval, and any that isn't idempotent (hashing a value it didn't check) applies twice. Only listeners registered after this package's are skipped on the request.
+- `saving` listeners run again on approval, and any that isn't idempotent (hashing a value it didn't check) applies twice. A save the gate holds doesn't reach listeners registered after this package's, which include those in `booted()` and observers, so they run only on approval.
 - A raw SQL expression (`DB::raw()`) can't be held: it throws, since it has no value to store until it runs. Saved directly, it's audited as its SQL. A change to a model loaded without its key throws too.
 - `$model->timestamps = false` on the instance doesn't reach the approval, which saves a fresh one.
 - An approval applies to the row, and returns the state of its own instances: a `Modification` you already hold needs `fresh()` to show the result, and relations set on a held instance (`associate()`) stay in memory.

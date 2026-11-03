@@ -305,8 +305,97 @@ class CollidingColumnsModel extends Model
     }
 }
 
+class ListenerOrderModel extends Model
+{
+    use RequiresApprovalWhenChanges;
+
+    public static array $calls = [];
+
+    public static bool $veto = false;
+
+    public static bool $gated = false;
+
+    protected $table = 'regression_models';
+
+    protected $guarded = ['id'];
+
+    protected static function booted(): void
+    {
+        static::saving(function () {
+            self::$calls[] = 'saving';
+
+            return self::$veto ? false : null;
+        });
+    }
+
+    protected function requiresApprovalWhen(array $modifications): bool
+    {
+        return self::$gated;
+    }
+}
+
 final class ApprovalEdgeCasesTest extends TestCase
 {
+    private function resetListenerModel(): void
+    {
+        ListenerOrderModel::$calls = [];
+        ListenerOrderModel::$veto = false;
+        ListenerOrderModel::$gated = false;
+    }
+
+    public function test_saving_listeners_in_booted_run_on_saves_the_gate_lets_through(): void
+    {
+        $this->resetListenerModel();
+
+        $model = ListenerOrderModel::create(['name' => 'one']);
+        $this->assertSame(['saving'], ListenerOrderModel::$calls);
+
+        $model->update(['name' => 'two']);
+        $this->assertSame(['saving', 'saving'], ListenerOrderModel::$calls);
+    }
+
+    public function test_a_saving_listener_in_booted_can_veto_and_leaves_no_audit_row(): void
+    {
+        $this->resetListenerModel();
+        $model = ListenerOrderModel::create(['name' => 'one']);
+        $audits = Modification::count();
+
+        ListenerOrderModel::$veto = true;
+
+        $this->assertFalse($model->update(['name' => 'two']));
+        $this->assertSame('one', ListenerOrderModel::find($model->id)->name);
+        $this->assertSame($audits, Modification::count());
+    }
+
+    public function test_a_save_the_gate_holds_doesnt_reach_later_listeners(): void
+    {
+        $this->resetListenerModel();
+        $model = ListenerOrderModel::create(['name' => 'one']);
+
+        ListenerOrderModel::$calls = [];
+        ListenerOrderModel::$gated = true;
+        $model->update(['name' => 'two']);
+
+        $this->assertSame([], ListenerOrderModel::$calls);
+        $this->assertSame('pending', $model->getLastModification()->status);
+    }
+
+    public function test_a_saving_listener_in_booted_can_veto_a_forced_change(): void
+    {
+        $this->resetListenerModel();
+        $model = ListenerOrderModel::create(['name' => 'one']);
+
+        ListenerOrderModel::$gated = true;
+        $model->update(['name' => 'two']);
+        $request = $model->getLastModification();
+
+        ListenerOrderModel::$veto = true;
+        $request->fresh()->forceApprovalUpdate();
+
+        $this->assertSame('pending', $request->fresh()->status);
+        $this->assertSame('one', ListenerOrderModel::find($model->id)->name);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

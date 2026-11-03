@@ -197,7 +197,7 @@ See [Creation Approval](docs/creation-approval.md) for the trade-offs.
 - Only `save()` goes through the gate. `increment()`/`decrement()`, `saveQuietly()`, `Model::where()->update()` and the query builder skip it, as they skip model events.
 - A schemaless sub-key containing `.` or `*` is merged by `set()` as a path, so it doesn't arrive as a literal key.
 - A change identical to a pending one is treated as that one, even if one of its items was already rejected: resend it once the rest is decided.
-- Two requests with an empty diff from `forceModification()` count as the same one while the first is pending, since the diff is all that identifies a request. The second returns the first row, and its `meta` is dropped. Don't send a second one for the same model until the first is decided.
+- Two requests with an empty diff from `forceModification()` count as the same one while the first is pending, since the diff is all that identifies a request. The second returns the first row, and its `meta` is dropped. Don't send a second one for the same model until the first is decided. See [Requests with an empty diff](docs/modifications.md#requests-with-an-empty-diff).
 - A non-finite float (`INF`, `NAN`) can't be stored in the JSON diff, and a save holding one throws.
 - `down()` of the first migration drops the tables, even if they existed before it ran.
 - Votes and modifications soft deleted before adopting this package, in tables with a `deleted_at` column, still count.

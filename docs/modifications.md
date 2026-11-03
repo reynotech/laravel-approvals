@@ -59,6 +59,48 @@ The `ori`/`mod` key names can be renamed via config, in case they collide with s
 
 Rename them only with no row pending: rows already stored keep the old names, and approving one can't read them.
 
+## Repeated requests
+
+A gated save identical to a change still pending on the same model doesn't add a row. Two changes are identical when their diffs match, compared through the `md5` column.
+
+`getLastModification()` then returns the row already there, which keeps its own author, date and `meta`. The `meta` of the repeated request is dropped. Once the first is decided, the same change makes a new row.
+
+This doesn't apply to direct saves, which get a row each, or to creations in draft mode. A deferred creation repeats when its attributes match, in any order, and has no row to wait on, so two at the same instant can still both be held.
+
+To know which case you got, read `wasRecentlyCreated`:
+
+```php
+$model->requiresApproval(fn () => true)->save();
+
+$request = $model->getLastModification();
+$request->wasRecentlyCreated;   // false: an identical request was already pending
+```
+
+### Requests with an empty diff
+
+A request from [`forceModification()`](api-reference.md) with nothing dirty has an empty diff, and every empty diff matches. What it asks for lives outside the columns, so the package can't tell two of them apart: a second request for another photo, by another person, for another reason, comes back as the first one.
+
+If your code then attaches that photo to the returned row, an approver sees the first person's reason next to the second person's photo. Nothing fails or warns.
+
+Don't send a second one until the first is decided. Check inside a transaction, with the row locked, or two requests at once can both find nothing pending:
+
+```php
+DB::transaction(function () use ($model, $reason, $photo) {
+    $locked = $model->newQuery()->lockForUpdate()->find($model->getKey());
+
+    abort_if($locked->modifications()->activeOnly()->exists(), 409);
+
+    $model->requiresApproval(fn () => true)
+        ->withModificationMeta(['reason' => $reason])
+        ->forceModification()
+        ->save();
+
+    $model->getLastModification()->addImage($photo, ['name' => 'photo', 'label' => 'Photo']);
+});
+```
+
+Treat this as a limitation, not as a feature to build on: don't rely on a second empty request merging into the first.
+
 ## Additional metadata
 
 `Modification` also carries `event_type` (nullable — set by [`recordModification()`](manual-events.md)), `operation_id` (nullable, indexed — see below), `context` (nullable JSON), and `occurred_at`.

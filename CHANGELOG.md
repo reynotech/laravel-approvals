@@ -6,6 +6,7 @@ All notable changes to this project are documented here. This project follows [S
 - Fixed: since 0.6.0, `forceModification()` on a gated save with nothing dirty saved directly and left no pending row, so a change kept outside the columns, such as a photo, went through with no approval. It now holds a pending `Modification` with an empty diff. Approving or rejecting it closes it and writes no column.
 - Fixed: `forceModification()` stayed on for every later save of the instance. It now covers the next save only.
 - Documented: a 0.6.0 change missing from its notes. A manual `Approvable` whose `applyModificationChanges()` doesn't close the `Modification` has its vote and its database effects undone, and `approve()` returns `false`.
+- Documented: how repeated requests are treated, and why requests with an empty diff need a check of your own.
 
 ### 0.6.0 - 2026-11-03
 - Fixed: one approver could fill several approval slots by voting with different reasons. Each approver now holds one vote per decision, and the first reason is kept.

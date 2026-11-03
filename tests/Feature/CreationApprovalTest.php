@@ -449,6 +449,14 @@ final class CreationApprovalTest extends TestCase
         $this->assertSame(0, Modification::count());
     }
 
+    public function test_draft_repeating_a_creation_makes_another_request(): void
+    {
+        DraftCreationModel::create(['name' => 'ACME', 'status' => 'gated']);
+        DraftCreationModel::create(['name' => 'ACME', 'status' => 'gated']);
+
+        $this->assertSame(2, Modification::count());
+    }
+
     public function test_draft_forcing_an_approval_reveals_the_row(): void
     {
         $model = DraftCreationModel::create(['name' => 'ACME', 'status' => 'gated']);

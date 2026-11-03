@@ -460,6 +460,7 @@ trait RequiresApprovalWhenChanges
     /**
      * Make the next save produce a Modification even if nothing changed, to record or decide something
      * outside the columns: an applied audit row, or a pending request if the gate holds the save.
+     * Every empty diff matches, so a second request while one is pending returns that one and drops its meta.
      */
     public function forceModification(): static
     {

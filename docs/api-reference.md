@@ -28,7 +28,7 @@ On a model using `RequiresApprovalWhenChanges`:
 | `noSaveModifications()` | Skip recording an audit `Modification` for a direct save. |
 | `withModificationMeta($meta)` | Attach `meta` to the next `Modification` produced by this save. |
 | `withFullSaveModification()` / `withFullSaveOnlyUpdateModification()` | Record the full attribute set instead of just the dirty diff. |
-| `forceModification()` | Make the next save produce a `Modification` even if nothing changed, to record or decide something outside the columns: an `applied` audit row, or a pending request if the gate holds the save. Approving that request closes it and writes no column. |
+| `forceModification()` | Make the next save produce a `Modification` even if nothing changed, to record or decide something outside the columns: an `applied` audit row, or a pending request if the gate holds the save. Approving that request closes it and writes no column. Don't send a second one while it's pending: see [Requests with an empty diff](modifications.md#requests-with-an-empty-diff). |
 | `withOperationId(?string $id)` | Tag the next `Modification`(s) with a shared `operation_id`. |
 | `recordModification(...)` | See [Recording Manual Events](manual-events.md). |
 | `getLastModification()` | The last `Modification` this instance created or matched. A save that creates none leaves it as it was. |
@@ -61,7 +61,7 @@ On a `Modification`:
 - Only `save()` goes through the gate. `increment()`/`decrement()`, `saveQuietly()`, `Model::where()->update()` and the query builder skip it, as they skip model events.
 - A schemaless sub-key containing `.` or `*` is merged by `set()` as a path, so it doesn't arrive as a literal key.
 - A change identical to a pending one is treated as that one, even if one of its items was already rejected: resend it once the rest is decided.
-- Two requests with an empty diff from `forceModification()` count as the same one while the first is pending, since the diff is all that identifies a request. The second returns the first row, and its `meta` is dropped. Don't send a second one for the same model until the first is decided.
+- Two requests with an empty diff from `forceModification()` count as the same one while the first is pending, since the diff is all that identifies a request. The second returns the first row, and its `meta` is dropped. Don't send a second one for the same model until the first is decided. See [Requests with an empty diff](modifications.md#requests-with-an-empty-diff).
 - A non-finite float (`INF`, `NAN`) can't be stored in the JSON diff, and a save holding one throws.
 - `down()` of the first migration drops the tables, even if they existed before it ran.
 - Votes and modifications soft deleted before adopting this package, in tables with a `deleted_at` column, still count.

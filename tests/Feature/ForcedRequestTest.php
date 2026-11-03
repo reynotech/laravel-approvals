@@ -371,9 +371,38 @@ final class ForcedRequestTest extends TestCase
 
         $this->assertFalse($model->withModificationMeta(['reason' => 'second photo'])->forceModification()->save());
 
+        $this->assertTrue($first->wasRecentlyCreated);
+        $this->assertFalse($model->getLastModification()->wasRecentlyCreated);
         $this->assertTrue($first->is($model->getLastModification()));
         $this->assertSame(1, Modification::count());
         $this->assertSame(['reason' => 'first photo'], $first->fresh()->meta->toArray());
+    }
+
+    public function test_a_repeated_change_with_a_diff_also_says_it_was_already_pending(): void
+    {
+        $model = $this->stored();
+        $model->requiresApproval(fn () => true);
+
+        $model->name = 'proposed';
+        $model->save();
+        $this->assertTrue($model->getLastModification()->wasRecentlyCreated);
+
+        $model->name = 'proposed';
+        $model->save();
+        $this->assertFalse($model->getLastModification()->wasRecentlyCreated);
+        $this->assertSame(1, Modification::count());
+    }
+
+    public function test_the_check_in_the_docs_finds_a_pending_empty_request(): void
+    {
+        $model = $this->stored();
+        $this->assertFalse($model->modifications()->activeOnly()->exists());
+
+        $model->requiresApproval(fn () => true)->forceModification()->save();
+        $this->assertTrue($model->newQuery()->lockForUpdate()->find($model->id)->modifications()->activeOnly()->exists());
+
+        $this->user()->approve($model->getLastModification());
+        $this->assertFalse($model->modifications()->activeOnly()->exists());
     }
 
     public function test_an_empty_request_after_the_first_was_decided_is_a_new_one(): void

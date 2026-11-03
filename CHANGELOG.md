@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. This project follows [Semantic Versioning](https://semver.org/).
 
+### 0.6.1 - 2026-11-03
+- Fixed: since 0.6.0, `forceModification()` on a gated save with nothing dirty saved directly and left no pending row, so a change kept outside the columns, such as a photo, went through with no approval. It now holds a pending `Modification` with an empty diff. Approving or rejecting it closes it and writes no column.
+- Fixed: `forceModification()` stayed on for every later save of the instance. It now covers the next save only.
+- Documented: a 0.6.0 change missing from its notes. A manual `Approvable` whose `applyModificationChanges()` doesn't close the `Modification` has its vote and its database effects undone, and `approve()` returns `false`.
+
 ### 0.6.0 - 2026-11-03
 - Fixed: one approver could fill several approval slots by voting with different reasons. Each approver now holds one vote per decision, and the first reason is kept.
 - Fixed: a change could be voted on after being decided. Reapproving overwrote newer data, disapproving marked an applied change `rejected`, and approving a direct audit row rolled the model back. All of them now return `false` and change nothing.

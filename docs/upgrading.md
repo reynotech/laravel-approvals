@@ -21,6 +21,9 @@ Resolve pending `Modification` rows before upgrading if they touch an `encrypted
 - `ori` now uses the same format as `mod` (a `date` is `Y-m-d`, a `boolean` is `true`/`false`). Rows already stored keep the old format, so code comparing `ori` against a live value should expect both.
 - Rows waiting for approval can hold a third key, `raw`. Code reading the diff should read `ori`/`mod` by name rather than assume a pair.
 - `Modification::forceApprovalUpdate()` does nothing on a change that isn't pending.
+- A gated save with nothing to decide (no changes, a `touch()`, only untracked columns) saves directly and leaves no pending row. If what needs approval lives outside the columns, such as a photo, call `forceModification()` on that save. That only works from 0.6.1: 0.6.0 ignored it on a gated save and saved directly, so go straight to 0.6.1 or later.
+- From 0.6.1, `forceModification()` covers the next save only. Code relying on it for several saves of an instance must call it before each one.
+- A manual `Approvable`, one not using the trait, must close the `Modification` in `applyModificationChanges()`: set `status` to `approved` or `rejected` and save it. If it's still pending afterwards, the decision counts as refused: the vote and its database effects are undone, with no exception, and `approve()`/`disapprove()` return `false`.
 - Creation approval is opt-in. To use `draft` mode, add its boolean column to the model's table (see [Creation Approval](creation-approval.md)).
 
 No migration is required.

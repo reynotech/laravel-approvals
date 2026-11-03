@@ -71,7 +71,14 @@ trait RequiresApprovalWhenChanges
 
         // Null, not true, when the save may go on: Eloquent stops at the first listener answering
         // anything, so true would silently skip every `saving` listener registered after this one.
-        static::saving(fn ($item) => self::gateSave($item) ? null : false);
+        static::saving(function ($item) {
+            try {
+                return self::gateSave($item) ? null : false;
+            } finally {
+                // Covers this save only, whichever path it took.
+                $item->forcedModification = false;
+            }
+        });
 
         // Written once the save went through: a veto or a database error must not leave an `applied`
         // row for a change that never happened.
@@ -450,6 +457,10 @@ trait RequiresApprovalWhenChanges
         return $this;
     }
 
+    /**
+     * Make the next save produce a Modification even if nothing changed, to record or decide something
+     * outside the columns: an applied audit row, or a pending request if the gate holds the save.
+     */
     public function forceModification(): static
     {
         $this->forcedModification = true;
@@ -600,8 +611,9 @@ trait RequiresApprovalWhenChanges
         }
 
         // Nothing to decide (no changes, a touch(), only untracked columns): save it as usual
-        // instead of blocking it behind a pending row that could never write anything.
-        if (array_diff(array_keys($item->getDirty()), self::untrackedKeys($item)) === []) {
+        // instead of blocking it behind a pending row that could never write anything. Unless the
+        // caller forced the request: what's being decided lives outside the columns, such as a photo.
+        if (!$item->forcedModification && array_diff(array_keys($item->getDirty()), self::untrackedKeys($item)) === []) {
             return true;
         }
 

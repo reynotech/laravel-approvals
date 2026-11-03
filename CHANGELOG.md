@@ -56,7 +56,7 @@ All notable changes to this project are documented here. This project follows [S
 - Fixed: `saving` listeners registered after this package's, which include those in `booted()` and observers, never ran, so they couldn't change values or veto a save. They now run on any save the gate lets through, and on approval.
 - Fixed: `occurred_at` ignored the app's clock, so `Carbon::setTestNow()` and `travelTo()` didn't reach it.
 - Fixed: on Postgres, saving a model with a changed `bytea` column threw, since it reads back as a stream, and approving bytes failed because they were written as text.
-- Added: creation approval. A model implementing `Contracts\GatesCreation` can hold a creation until it's approved, either with no row (`deferred`, the default) or with a hidden one (`draft`, which needs a boolean column). Set the mode in `approvals.creation.mode` or per model with `approvalCreationMode()`. In both modes `created_at` is the request time, and `forceApprovalUpdate()` resolves a request with no vote. Models that don't opt in save directly as before.
+- Added: creation approval. A model implementing `Contracts\GatesCreation` can hold a creation until it's approved, either with no row (`deferred`, the default) or with a hidden one (`draft`, which needs a boolean column). Set the mode in `approvals.creation.mode` or per model with `approvalCreationMode()`. In both modes `created_at` is the request time, and `forceApprovalCreate()` resolves a request with no vote. Models that don't opt in save directly as before.
 - Added: `approversRequired()`/`disapproversRequired()` to override on the model, since redeclaring the trait's properties with another value is a PHP fatal error.
 
 ### 0.5.0 - 2026-11-02

@@ -214,6 +214,19 @@ class Modification extends Model
     }
 
     /**
+     * forceApprovalUpdate() for a creation, refusing anything else: a query that went wrong
+     * must not apply a change to an existing row under this name.
+     */
+    public function forceApprovalCreate(): void
+    {
+        if (!$this->isCreation()) {
+            throw new \LogicException("Modification [{$this->getKey()}] isn't a creation.");
+        }
+
+        $this->forceApprovalUpdate();
+    }
+
+    /**
      * Derives the legacy `active`/`is_modification` booleans from `flow`/
      * `status`, so old consumers reading those columns keep working without
      * changes: direct/applied => inactive audit row; approval/pending =>

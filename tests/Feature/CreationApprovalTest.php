@@ -544,7 +544,7 @@ final class CreationApprovalTest extends TestCase
         $class::create(['name' => 'ACME', 'status' => 'gated']);
 
         foreach ($class::pendingCreations() as $request) {
-            $request->forceApprovalUpdate();
+            $request->forceApprovalCreate();
         }
 
         $request = Modification::sole();
@@ -555,6 +555,51 @@ final class CreationApprovalTest extends TestCase
         $this->assertSame('ACME', $request->modifiable->name);
         $this->assertCount(0, $class::pendingCreations());
         $this->assertSame(1, $class::count());
+    }
+
+    /**
+     * @dataProvider modes
+     */
+    public function test_force_create_works_on_the_instance_the_save_returned(string $class): void
+    {
+        $class::create(['name' => 'ACME', 'status' => 'gated'])->getLastModification()->forceApprovalCreate();
+
+        $this->assertSame(1, $class::count());
+        $this->assertSame('approved', Modification::sole()->status);
+    }
+
+    /**
+     * @dataProvider modes
+     */
+    public function test_force_create_refuses_a_change_to_an_existing_row(string $class): void
+    {
+        $model = $class::create(['name' => 'ACME', 'status' => 'open']);
+        $model->requiresApproval(fn () => true);
+        $model->update(['name' => 'changed']);
+        $request = $model->getLastModification();
+
+        try {
+            $request->fresh()->forceApprovalCreate();
+            $this->fail('only a creation can be forced under this name');
+        } catch (\LogicException) {
+        }
+
+        $this->assertSame('pending', $request->fresh()->status);
+        $this->assertSame('ACME', $class::find($model->id)->name);
+    }
+
+    /**
+     * @dataProvider modes
+     */
+    public function test_force_create_leaves_a_decided_creation_alone(string $class): void
+    {
+        $request = $class::create(['name' => 'ACME', 'status' => 'gated'])->getLastModification();
+        $this->user()->disapprove($request);
+
+        $request->fresh()->forceApprovalCreate();
+
+        $this->assertSame('rejected', $request->fresh()->status);
+        $this->assertSame(0, $class::count());
     }
 
     /**

@@ -50,6 +50,7 @@ On a `Modification`:
 | Method | Purpose |
 |---|---|
 | `forceApprovalUpdate()` | Apply a pending change or creation with no vote. All or nothing, and returns nothing: check `status` afterwards. |
+| `forceApprovalCreate()` | The same for a creation. Throws a `LogicException` on anything else. |
 | `isPending()` / `isCreation()` | Whether it's waiting for a decision, and whether it requests a new row. |
 | `modifiableWithDrafts()` | The model, including a row hidden while its creation is pending. |
 

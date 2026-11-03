@@ -107,18 +107,18 @@ $user->approve($request);                     // the row becomes visible
 
 ## Resolving without a vote
 
-When a request no longer needs a decision, for example because the data it was waiting on got fixed, apply it with `forceApprovalUpdate()`:
+When a request no longer needs a decision, for example because the data it was waiting on got fixed, apply it with `forceApprovalCreate()`:
 
 ```php
 foreach (Client::pendingCreations() as $request) {
     if (Region::whereKey($request->modifications['region_id']['mod'])->exists()) {
-        $request->forceApprovalUpdate();
+        $request->forceApprovalCreate();
     }
 }
 ```
 
 - The package watches nothing: your code decides when to call it.
-- It works in both modes and only on pending requests. It records no vote, so keep who or what resolved it yourself if you need that.
+- It works in both modes and only on pending requests, and throws a `LogicException` on a change to an existing row. It records no vote, so keep who or what resolved it yourself if you need that.
 - It returns nothing. If `$request->fresh()->status` is still `pending`, a listener vetoed the write. A database error, such as a unique index, is thrown, and the request stays pending.
 - It writes the values as they were requested. To change one, reject the request and send it again.
 

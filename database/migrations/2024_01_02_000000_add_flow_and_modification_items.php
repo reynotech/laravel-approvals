@@ -56,7 +56,15 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('disapprovals', function (Blueprint $table) {
+            $table->dropIndex(['modification_item_id']);
+        });
+
+        Schema::table('disapprovals', function (Blueprint $table) {
             $table->dropColumn('modification_item_id');
+        });
+
+        Schema::table('approvals', function (Blueprint $table) {
+            $table->dropIndex(['modification_item_id']);
         });
 
         Schema::table('approvals', function (Blueprint $table) {
@@ -67,6 +75,9 @@ return new class extends Migration
 
         Schema::table('modifications', function (Blueprint $table) {
             $table->dropIndex(['operation_id']);
+        });
+
+        Schema::table('modifications', function (Blueprint $table) {
             $table->dropColumn(['flow', 'status', 'event_type', 'operation_id', 'context', 'occurred_at']);
         });
     }

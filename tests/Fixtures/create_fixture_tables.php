@@ -32,6 +32,20 @@ return function (): void {
         $table->timestamps();
     });
 
+    $schema->dropIfExists('regression_models');
+    $schema->create('regression_models', function (Blueprint $table) {
+        $table->increments('id');
+        foreach (['name', 'status', 'notes', 'secret', 'stamp', 'payload'] as $column) {
+            $table->text($column)->nullable();
+        }
+        $table->string('code')->nullable()->unique();
+        $table->integer('price')->nullable();
+        $table->binary('blob_value')->nullable();
+        $table->boolean('approval_pending')->default(false);
+        $table->softDeletes();
+        $table->timestamps();
+    });
+
     $schema->dropIfExists('approver_models');
     $schema->create('approver_models', function (Blueprint $table) {
         $table->increments('id');

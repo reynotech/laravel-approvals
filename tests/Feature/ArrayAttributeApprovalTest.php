@@ -51,8 +51,8 @@ final class ArrayAttributeApprovalTest extends TestCase
         $model->save();
 
         $this->assertSame($from, $this->stored($model, $column), 'nothing changes until it is approved');
-        $this->assertSame(
-            [$column => ['ori' => $from, 'mod' => $to]],
+        $this->assertDiffSame(
+            [$column => ['ori' => $from, 'mod' => $to, 'raw' => json_encode($to)]],
             Modification::query()->firstOrFail()->modifications->toArray(),
         );
 
@@ -74,7 +74,7 @@ final class ArrayAttributeApprovalTest extends TestCase
         $model->save();
 
         $this->assertSame($to, $this->stored($model, $column));
-        $this->assertSame(
+        $this->assertDiffSame(
             [$column => ['ori' => $from, 'mod' => $to]],
             Modification::query()->firstOrFail()->modifications->toArray(),
         );
@@ -143,7 +143,7 @@ final class ArrayAttributeApprovalTest extends TestCase
         $model->as_array = ['a', 'b'];
         $model->save();
 
-        $this->assertSame(
+        $this->assertDiffSame(
             ['ori' => ['a', 'b', 'c'], 'mod' => ['a', 'b']],
             Modification::query()->firstOrFail()->modifications['as_array'],
         );

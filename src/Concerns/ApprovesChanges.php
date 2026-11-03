@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace ReynoTECH\Approvals\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Support\Facades\DB;
 use ReynoTECH\Approvals\Models\Modification;
 use ReynoTECH\Approvals\Models\ModificationItem;
 use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
+use ReynoTECH\Approvals\Support\VoteNotApplied;
 
 /**
  * Applied to the model that casts approvals/disapprovals on a Modification
@@ -19,6 +19,10 @@ use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
  * (legacy behavior); when it has items, every pending item is resolved
  * atomically instead. Use approveItem()/disapproveItem() to decide a single
  * item without touching the others.
+ *
+ * All four return false when the vote wasn't taken or couldn't be applied: the
+ * approver isn't authorized, the change was already decided (or is an audit
+ * row), its model no longer exists, or a listener vetoed the save.
  */
 trait ApprovesChanges
 {
@@ -52,24 +56,24 @@ trait ApprovesChanges
 
     public function approveItem(ModificationItem $item, ?string $reason = null): bool
     {
-        if (!$this->authorizedToApprove($item->modification)) {
+        $modification = $item->modification;
+
+        if (!$modification || !$this->authorizedToApprove($modification)) {
             return false;
         }
 
-        $this->castItemVote($item, $reason, true);
-
-        return true;
+        return $this->decideItem($item, $reason, true);
     }
 
     public function disapproveItem(ModificationItem $item, ?string $reason = null): bool
     {
-        if (!$this->authorizedToDisapprove($item->modification)) {
+        $modification = $item->modification;
+
+        if (!$modification || !$this->authorizedToDisapprove($modification)) {
             return false;
         }
 
-        $this->castItemVote($item, $reason, false);
-
-        return true;
+        return $this->decideItem($item, $reason, false);
     }
 
     public function approvals(): MorphMany
@@ -82,121 +86,135 @@ trait ApprovesChanges
         return $this->morphMany(ResolvesApprovalModels::disapprovalClass(), 'disapprover');
     }
 
+    /**
+     * The vote and its effect share a transaction, and the row is locked and re-read inside it: a
+     * failed or vetoed write leaves no vote behind, and two approvers can't both decide the same change.
+     */
     private function decideModification(Modification $modification, ?string $reason, bool $approving): bool
     {
-        $modification = $modification->fresh();
+        try {
+            return $modification->getConnection()->transaction(function () use ($modification, $reason, $approving) {
+                $locked = $modification->newQuery()->lockForUpdate()->find($modification->getKey());
 
-        if ($modification->items()->exists()) {
-            $pendingItems = $modification->items()->pending()->get();
-
-            if ($pendingItems->isEmpty()) {
-                return true;
-            }
-
-            DB::transaction(function () use ($pendingItems, $reason, $approving) {
-                foreach ($pendingItems as $item) {
-                    $this->castItemVote($item, $reason, $approving);
+                if (!$locked || !$locked->isPending() || ($approving && $this->modifiableIsMissing($locked))) {
+                    return false;
                 }
+
+                if ($locked->items()->exists()) {
+                    foreach ($locked->items()->pending()->get() as $item) {
+                        if (!$this->castItemVote($item, $reason, $approving)) {
+                            throw new VoteNotApplied();
+                        }
+                    }
+
+                    return true;
+                }
+
+                $this->recordVote($locked, null, $reason, $approving);
+
+                $reached = $approving ? $locked->approversRemaining <= 0 : $locked->disapproversRemaining <= 0;
+
+                if ($reached) {
+                    $this->applyToModifiable($locked, $approving);
+                }
+
+                if ($reached && $locked->newQuery()->find($locked->getKey())?->isPending()) {
+                    throw new VoteNotApplied();
+                }
+
+                return true;
             });
-
-            return true;
+        } catch (VoteNotApplied) {
+            return false;
         }
-
-        $this->castGlobalVote($modification, $reason, $approving);
-
-        $modification = $modification->fresh();
-
-        if ($approving && $modification->approversRemaining <= 0) {
-            $this->applyToModifiable($modification, true);
-        } elseif (!$approving && $modification->disapproversRemaining <= 0) {
-            $this->applyToModifiable($modification, false);
-        }
-
-        return true;
     }
 
-    private function castItemVote(ModificationItem $item, ?string $reason, bool $approving): void
+    private function decideItem(ModificationItem $item, ?string $reason, bool $approving): bool
+    {
+        try {
+            return $item->getConnection()->transaction(function () use ($item, $reason, $approving) {
+                $locked = $item->modification()->getQuery()->lockForUpdate()->first();
+                $fresh = $item->fresh();
+
+                if (!$locked || !$fresh || $fresh->status !== 'pending' || ($approving && $this->modifiableIsMissing($locked))) {
+                    return false;
+                }
+
+                if (!$this->castItemVote($fresh, $reason, $approving)) {
+                    throw new VoteNotApplied();
+                }
+
+                return true;
+            });
+        } catch (VoteNotApplied) {
+            return false;
+        }
+    }
+
+    private function castItemVote(ModificationItem $item, ?string $reason, bool $approving): bool
     {
         $this->recordVote($item->modification, $item, $reason, $approving);
 
         $item = $item->fresh();
 
-        if ($approving && $item->approversRemaining <= 0) {
-            $this->applyItemToModifiable($item, true);
-        } elseif (!$approving && $item->disapproversRemaining <= 0) {
-            $this->applyItemToModifiable($item, false);
+        $reached = $approving ? $item->approversRemaining <= 0 : $item->disapproversRemaining <= 0;
+
+        if ($reached) {
+            $this->applyItemToModifiable($item, $approving);
         }
 
         $item->modification->recalculateStatusFromItems();
+
+        return !$reached || $item->status !== 'pending';
     }
 
-    private function castGlobalVote(Modification $modification, ?string $reason, bool $approving): void
-    {
-        $this->recordVote($modification, null, $reason, $approving);
-    }
-
+    /**
+     * Each approver holds one vote per decision. The reason is only data: as part of the lookup,
+     * voting again with a different one added a second vote that counted toward the quota.
+     */
     private function recordVote(Modification $modification, ?ModificationItem $item, ?string $reason, bool $approving): void
     {
         $approvalModel = ResolvesApprovalModels::approvalClass();
         $disapprovalModel = ResolvesApprovalModels::disapprovalClass();
-        $itemId = $item?->id;
+
+        $decision = [
+            'modification_id' => $modification->id,
+            'modification_item_id' => $item?->id,
+        ];
+
+        $approval = $decision + ['approver_id' => $this->getKey(), 'approver_type' => $this->getMorphClass()];
+        $disapproval = $decision + ['disapprover_id' => $this->getKey(), 'disapprover_type' => $this->getMorphClass()];
 
         if ($approving) {
-            if ($disapproval = $disapprovalModel::where([
-                'disapprover_id' => $this->{$this->primaryKey},
-                'disapprover_type' => static::class,
-                'modification_id' => $modification->id,
-                'modification_item_id' => $itemId,
-            ])->first()) {
-                $disapproval->delete();
-            }
-
-            $approvalModel::firstOrCreate([
-                'approver_id' => $this->{$this->primaryKey},
-                'approver_type' => static::class,
-                'modification_id' => $modification->id,
-                'modification_item_id' => $itemId,
-                'reason' => $reason,
-            ]);
+            $disapprovalModel::where($disapproval)->get()->each->delete();
+            $approvalModel::firstOrCreate($approval, ['reason' => $reason]);
         } else {
-            if ($approval = $approvalModel::where([
-                'approver_id' => $this->{$this->primaryKey},
-                'approver_type' => static::class,
-                'modification_id' => $modification->id,
-                'modification_item_id' => $itemId,
-            ])->first()) {
-                $approval->delete();
-            }
-
-            $disapprovalModel::firstOrCreate([
-                'disapprover_id' => $this->{$this->primaryKey},
-                'disapprover_type' => static::class,
-                'modification_id' => $modification->id,
-                'modification_item_id' => $itemId,
-                'reason' => $reason,
-            ]);
+            $approvalModel::where($approval)->get()->each->delete();
+            $disapprovalModel::firstOrCreate($disapproval, ['reason' => $reason]);
         }
+    }
+
+    private function modifiableIsMissing(Modification $modification): bool
+    {
+        return $modification->modifiable_id !== null && $modification->modifiableWithDrafts() === null;
+    }
+
+    /**
+     * An empty instance runs what needs no row: inserting a deferred creation, or rejecting a change
+     * to a model that no longer exists.
+     */
+    private function resolveModifiable(Modification $modification)
+    {
+        return $modification->modifiableWithDrafts() ?? new ($modification->modifiableClass())();
     }
 
     private function applyToModifiable(Modification $modification, bool $approved): void
     {
-        if ($modification->modifiable_id === null) {
-            $polymorphicModel = new $modification->modifiable_type();
-            $polymorphicModel->applyModificationChanges($modification, $approved);
-        } else {
-            $modification->modifiable->applyModificationChanges($modification, $approved);
-        }
+        $this->resolveModifiable($modification)->applyModificationChanges($modification, $approved);
     }
 
     private function applyItemToModifiable(ModificationItem $item, bool $approved): void
     {
-        $modification = $item->modification;
-
-        if ($modification->modifiable_id === null) {
-            $polymorphicModel = new $modification->modifiable_type();
-            $polymorphicModel->applyModificationItemChanges($item, $approved);
-        } else {
-            $modification->modifiable->applyModificationItemChanges($item, $approved);
-        }
+        $this->resolveModifiable($item->modification)->applyModificationItemChanges($item, $approved);
     }
 }

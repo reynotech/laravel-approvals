@@ -27,11 +27,33 @@ return [
     |
     | Each entry in `modifications.modifications` is stored as a pair of
     | original/modified values, e.g. ['ori' => 'draft', 'mod' => 'active'].
-    | Rename the keys here if 'ori'/'mod' collide with something in your app.
+    | Rows waiting for approval add 'raw' when what a save would store isn't
+    | exactly `mod`: that's what approving writes. Rename the keys here if they
+    | collide with something in your app, once no row is pending: rows already
+    | stored keep the old names, and approving one can't read them.
     |
     */
     'diff_keys' => [
         'original' => 'ori',
         'modified' => 'mod',
+        'stored' => 'raw',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Creation approval
+    |--------------------------------------------------------------------------
+    |
+    | How a model implementing Contracts\GatesCreation holds a creation until
+    | it's approved. Override approvalCreationMode() to choose per model.
+    |
+    | - 'deferred': nothing is inserted until it's approved. No column needed.
+    | - 'draft': the row is inserted at once, hidden from queries until approved,
+    |   and deleted if rejected. Needs `draft_column` on the model's table.
+    |
+    */
+    'creation' => [
+        'mode' => 'deferred',
+        'draft_column' => 'approval_pending',
     ],
 ];

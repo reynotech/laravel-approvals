@@ -17,6 +17,9 @@ use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
  */
 class ModificationItem extends Model
 {
+    /** Holds the changed fields that approvableItemGroups() didn't assign to any group. */
+    public const KEY_UNGROUPED = '_ungrouped';
+
     protected $table = 'modification_items';
 
     protected $guarded = ['id'];
@@ -33,17 +36,17 @@ class ModificationItem extends Model
 
     public function modification(): BelongsTo
     {
-        return $this->belongsTo(ResolvesApprovalModels::modificationClass());
+        return $this->belongsTo(ResolvesApprovalModels::modificationClass(), 'modification_id');
     }
 
     public function approvals(): HasMany
     {
-        return $this->hasMany(ResolvesApprovalModels::approvalClass());
+        return $this->hasMany(ResolvesApprovalModels::approvalClass(), 'modification_item_id');
     }
 
     public function disapprovals(): HasMany
     {
-        return $this->hasMany(ResolvesApprovalModels::disapprovalClass());
+        return $this->hasMany(ResolvesApprovalModels::disapprovalClass(), 'modification_item_id');
     }
 
     public function getApproversRemainingAttribute(): int

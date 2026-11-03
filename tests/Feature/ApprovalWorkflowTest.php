@@ -41,7 +41,7 @@ final class ApprovalWorkflowTest extends TestCase
         $this->assertTrue($modification->active);
         $this->assertTrue($modification->is_modification);
         $this->assertSame(1, $modification->approvers_required);
-        $this->assertSame(['status' => ['ori' => 'draft', 'mod' => 'active']], $modification->modifications->toArray());
+        $this->assertDiffSame(['status' => ['ori' => 'draft', 'mod' => 'active']], $modification->modifications->toArray());
     }
 
     public function test_resubmitting_a_pending_change_keeps_the_original_request(): void
@@ -74,7 +74,7 @@ final class ApprovalWorkflowTest extends TestCase
         $model->save();
 
         $this->assertNull($model->fresh()->rules);
-        $this->assertSame(
+        $this->assertDiffSame(
             ['ori' => ['zone' => 'north', 'radius' => 50], 'mod' => null],
             Modification::query()->latest('id')->first()->modifications['rules'],
         );
@@ -135,6 +135,7 @@ final class ApprovalWorkflowTest extends TestCase
         $model->save();
 
         $modification = Modification::first();
+        $modification->update(['disapprovers_required' => 2]);
 
         $approver->disapprove($modification);
         $approver->approve($modification);

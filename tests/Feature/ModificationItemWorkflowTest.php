@@ -27,7 +27,7 @@ final class ModificationItemWorkflowTest extends TestCase
         $this->assertFalse($modification->active);
         $this->assertFalse($modification->is_modification);
         $this->assertSame(0, $modification->items()->count());
-        $this->assertSame(['status' => ['ori' => 'draft', 'mod' => 'active']], $modification->modifications->toArray());
+        $this->assertDiffSame(['status' => ['ori' => 'draft', 'mod' => 'active']], $modification->modifications->toArray());
     }
 
     public function test_pending_change_without_groups_creates_no_items_and_does_not_persist(): void
@@ -162,11 +162,12 @@ final class ModificationItemWorkflowTest extends TestCase
 
         $modification = Modification::first();
         $rulesItem = $modification->items()->where('key', 'rules')->first();
+        $rulesItem->update(['disapprovers_required' => 2]);
 
         $approver->disapproveItem($rulesItem, 'not yet');
         $approver->disapproveItem($rulesItem, 'not yet');
         $this->assertSame(1, $approver->disapprovals()->count());
-        $this->assertSame('rejected', $rulesItem->fresh()->status);
+        $this->assertSame('pending', $rulesItem->fresh()->status);
         $this->assertSame('r1', $model->fresh()->rules);
 
         $approver->approveItem($rulesItem, 'changed my mind');

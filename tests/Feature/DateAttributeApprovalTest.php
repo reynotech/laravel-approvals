@@ -94,7 +94,7 @@ final class DateAttributeApprovalTest extends TestCase
         $model->extra->set('state', 'bad');
         $model->save();
 
-        $this->assertSame(
+        $this->assertDiffSame(
             ['extra' => ['ori' => ['state' => 'ok'], 'mod' => ['state' => 'bad']]],
             Modification::query()->firstOrFail()->modifications->toArray(),
         );

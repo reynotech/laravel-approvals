@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use ReynoTECH\Approvals\Scopes\ApprovalDraftScope;
 use ReynoTECH\Approvals\Support\ResolvesApprovalModels;
+use ReynoTECH\Approvals\Support\VoteNotApplied;
 
 class Modification extends Model
 {
@@ -62,27 +66,27 @@ class Modification extends Model
 
     public function approvals(): HasMany
     {
-        return $this->hasMany(ResolvesApprovalModels::approvalClass());
+        return $this->hasMany(ResolvesApprovalModels::approvalClass(), 'modification_id');
     }
 
     public function disapprovals(): HasMany
     {
-        return $this->hasMany(ResolvesApprovalModels::disapprovalClass());
+        return $this->hasMany(ResolvesApprovalModels::disapprovalClass(), 'modification_id');
     }
 
     public function items(): HasMany
     {
-        return $this->hasMany(ResolvesApprovalModels::modificationItemClass());
+        return $this->hasMany(ResolvesApprovalModels::modificationItemClass(), 'modification_id');
     }
 
     public function getApproversRemainingAttribute(): int
     {
-        return $this->approvers_required - $this->approvals()->count();
+        return $this->approvers_required - $this->approvals()->whereNull('modification_item_id')->count();
     }
 
     public function getDisapproversRemainingAttribute(): int
     {
-        return $this->disapprovers_required - $this->disapprovals()->count();
+        return $this->disapprovers_required - $this->disapprovals()->whereNull('modification_item_id')->count();
     }
 
     /**
@@ -101,9 +105,112 @@ class Modification extends Model
         return $this->disapproversRemaining;
     }
 
+    /**
+     * Whether this row is still waiting for a decision. Anything else, including a direct audit
+     * row, can't take a vote: applying it again would overwrite whatever changed since.
+     */
+    public function isPending(): bool
+    {
+        return $this->flow === self::FLOW_APPROVAL && $this->status === self::STATUS_PENDING;
+    }
+
+    public function isCreation(): bool
+    {
+        return $this->is_update === false;
+    }
+
+    /**
+     * The modifiable class, resolving a morph alias.
+     */
+    public function modifiableClass(): string
+    {
+        return Relation::getMorphedModel($this->modifiable_type) ?? $this->modifiable_type;
+    }
+
+    /**
+     * The modifiable, including a row hidden while its creation waits for approval,
+     * which the `modifiable` relation can't see.
+     */
+    public function modifiableWithDrafts(): ?Model
+    {
+        if ($this->modifiable_id === null) {
+            return null;
+        }
+
+        // Not the relation: it would also look on this Modification's connection, not the model's.
+        if ($this->relationLoaded('modifiable') && $this->getRelation('modifiable')) {
+            return $this->getRelation('modifiable');
+        }
+
+        $class = $this->modifiableClass();
+        $query = $class::withoutGlobalScope(ApprovalDraftScope::class);
+
+        // A change restoring a soft-deleted model has to reach it.
+        if (method_exists($class, 'getDeletedAtColumn')
+            && array_key_exists((new $class())->getDeletedAtColumn(), $this->modifications->toArray())) {
+            $query->withoutGlobalScope(SoftDeletingScope::class);
+        }
+
+        $model = $query->find($this->modifiable_id);
+
+        $this->setRelation('modifiable', $model);
+
+        return $model;
+    }
+
+    /**
+     * Skips the votes, not the rules: only a pending change can be forced, and a rejected item
+     * stays rejected. Anything else would overwrite whatever changed since it was decided.
+     * All or nothing: a listener vetoing part of it leaves everything pending.
+     */
     public function forceApprovalUpdate(): void
     {
-        $this->modifiable->applyModificationChanges($this, true);
+        $status = $this->status;
+
+        try {
+            $this->getConnection()->transaction(function () {
+                if (!$this->newQuery()->lockForUpdate()->find($this->getKey())?->isPending()) {
+                    return;
+                }
+
+                // From the row, not an instance cached earlier: a stale one could see no change to write.
+                $this->unsetRelation('modifiable');
+
+                $model = $this->modifiable_id === null
+                    ? new ($this->modifiableClass())()
+                    : $this->modifiableWithDrafts();
+
+                if (!$model) {
+                    return;
+                }
+
+                if (!$this->items()->exists()) {
+                    $model->applyModificationChanges($this, true);
+
+                    if ($this->newQuery()->find($this->getKey())?->isPending()) {
+                        throw new VoteNotApplied();
+                    }
+
+                    return;
+                }
+
+                foreach ($this->items()->pending()->get() as $item) {
+                    $model->applyModificationItemChanges($item, true);
+
+                    if ($item->status === 'pending') {
+                        throw new VoteNotApplied();
+                    }
+                }
+
+                $this->recalculateStatusFromItems();
+            });
+        } catch (VoteNotApplied) {
+            $this->status = $status;
+        } catch (\Throwable $e) {
+            $this->status = $status;
+
+            throw $e;
+        }
     }
 
     /**

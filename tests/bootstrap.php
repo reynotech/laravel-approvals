@@ -41,6 +41,27 @@ if (!function_exists('auth')) {
     }
 }
 
+// A server takes a moment to accept connections after its container starts.
+if (in_array(getenv('DB_CONNECTION'), ['mysql', 'pgsql'], true)) {
+    $config = ReynoTECH\Approvals\Tests\TestCase::connectionConfig();
+    $dsn = "{$config['driver']}:host={$config['host']};port={$config['port']};dbname={$config['database']}";
+    $deadline = time() + 90;
+
+    while (true) {
+        try {
+            new PDO($dsn, $config['username'], $config['password']);
+            break;
+        } catch (PDOException $e) {
+            if (time() > $deadline) {
+                fwrite(STDERR, "{$config['driver']} isn't reachable at {$config['host']}:{$config['port']}. Start it with `bin/bench db up`.\n{$e->getMessage()}\n");
+                exit(1);
+            }
+
+            sleep(1);
+        }
+    }
+}
+
 function test_set_authenticated_user($user): void
 {
     $GLOBALS['__test_auth_user'] = $user;
